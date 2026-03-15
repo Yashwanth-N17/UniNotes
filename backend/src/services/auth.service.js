@@ -1,0 +1,185 @@
+import { prisma } from "../config/db.js";
+import { hashData } from "../utils/hash.js";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyToken,
+} from "../utils/token.js";
+
+export async function registerUser(data, req) {
+  const { fullname, username, email, password, university, department, year } =
+    data;
+
+  if (
+    !fullname ||
+    !username ||
+    !email ||
+    !password ||
+    !university ||
+    !department ||
+    !year
+  ) {
+    throw new Error("All fields are required");
+  }
+
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      OR: [{ email }, { username }],
+    },
+  });
+
+  if (existingUser) {
+    throw new Error("User already registered");
+  }
+
+  const hashedPassword = hashData(password);
+
+  const user = await prisma.user.create({
+    data: {
+      fullname,
+      username,
+      email,
+      password: hashedPassword,
+      university,
+      department,
+      year,
+    },
+  });
+
+  const refreshToken = generateRefreshToken({ id: user.id });
+  const refreshTokenHash = hashData(refreshToken);
+
+  const session = await prisma.session.create({
+    data: {
+      userId: user.id,
+      refreshTokenHash,
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+      revoke: false,
+    },
+  });
+
+  const accessToken = generateAccessToken({
+    id: user.id,
+    sessionId: session.id,
+  });
+
+  return { user, accessToken, refreshToken };
+}
+
+export async function loginUser(email, password, req) {
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const hashedPassword = hashData(password);
+
+  if (hashedPassword !== user.password) {
+    throw new Error("Invalid password");
+  }
+
+  const refreshToken = generateRefreshToken({ id: user.id });
+  const refreshTokenHash = hashData(refreshToken);
+
+  const session = await prisma.session.create({
+    data: {
+      userId: user.id,
+      refreshTokenHash,
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+      revoke: false,
+    },
+  });
+
+  const accessToken = generateAccessToken({
+    id: user.id,
+    sessionId: session.id,
+  });
+
+  return { accessToken, refreshToken };
+}
+
+export async function refreshUserToken(refreshToken) {
+  if (!refreshToken) {
+    throw new Error("Refresh token not found");
+  }
+
+  const decoded = verifyToken(refreshToken);
+  const refreshTokenHash = hashData(refreshToken);
+
+  const session = await prisma.session.findFirst({
+    where: {
+      refreshTokenHash,
+      revoke: false,
+    },
+  });
+
+  if (!session) {
+    throw new Error("Invalid refresh token");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: decoded.id },
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const accessToken = generateAccessToken({
+    id: user.id,
+    sessionId: session.id,
+  });
+
+  const newRefreshToken = generateRefreshToken({ id: user.id });
+  const newRefreshTokenHash = hashData(newRefreshToken);
+
+  await prisma.session.update({
+    where: { id: session.id },
+    data: { refreshTokenHash: newRefreshTokenHash },
+  });
+
+  return { accessToken, newRefreshToken };
+}
+
+export async function logoutUser(refreshToken) {
+  if (!refreshToken) {
+    throw new Error("Refresh token not found");
+  }
+
+  const refreshTokenHash = hashData(refreshToken);
+
+  const session = await prisma.session.findFirst({
+    where: {
+      refreshTokenHash,
+      revoke: false,
+    },
+  });
+
+  if (!session) {
+    throw new Error("Invalid refresh token");
+  }
+
+  await prisma.session.update({
+    where: { id: session.id },
+    data: { revoke: true },
+  });
+
+  return true;
+}
+
+export async function getUserProfile(userId) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  return user;
+}
