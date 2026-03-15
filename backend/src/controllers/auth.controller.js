@@ -14,7 +14,15 @@ export async function register(req, res) {
     },
   });
 
-  if(!fullname || !username || !email || !password || !university || !department || !year){
+  if (
+    !fullname ||
+    !username ||
+    !email ||
+    !password ||
+    !university ||
+    !department ||
+    !year
+  ) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
@@ -38,16 +46,6 @@ export async function register(req, res) {
     },
   });
 
-  const accessToken = jwt.sign(
-    {
-      id: newUser.id,
-    },
-    config.jwtSecret,
-    {
-      expiresIn: "15m",
-    },
-  );
-
   const refreshToken = jwt.sign(
     {
       id: newUser.id,
@@ -58,12 +56,31 @@ export async function register(req, res) {
     },
   );
 
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "strict",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+  const refreshTokenHash = crypto
+    .createHash("sha256")
+    .update(refreshToken)
+    .digest("hex");
+
+  const session = await prisma.Session.create({
+    data: {
+      userId: newUser.id,
+      refreshTokenHash: refreshTokenHash,
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+      revoke: false,
+    },
   });
+
+  const accessToken = jwt.sign(
+    {
+      id: newUser.id,
+      sessionId: session.id,
+    },
+    config.jwtSecret,
+    {
+      expiresIn: "15m",
+    },
+  );
 
   return res.status(201).json({
     message: "User registered successfully",
@@ -80,87 +97,212 @@ export async function register(req, res) {
   });
 }
 
+export async function getMe(req, res) {
+  const token = req.headers.authorization?.split(" ")[1];
 
-export async function getMe(req, res){
-    const token = req.headers.authorization?.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 
-    if(!token){
-        return res.status(401).json({ message: "Unauthorized" });
-    }
+  const decodedToken = jwt.verify(token, config.jwtSecret);
+  const user = await prisma.user.findUnique({
+    where: {
+      id: decodedToken.id,
+    },
+  });
 
-    const decodedToken = jwt.verify(token, config.jwtSecret);
-    const user = await prisma.user.findUnique({
-        where: {
-            id: decodedToken.id,
-        },
-    });
-    
-    if(!user){
-        return res.status(401).json({ message: "Unauthorized" });
-    }
+  if (!user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 
-    return res.status(200).json({
-        message: "User fetched successfully",
-        user: {
-            id: user.id,
-            fullname: user.fullname,
-            username: user.username,
-            email: user.email,
-            university: user.university,
-            department: user.department,
-            year: user.year,
-        },
-    });
+  return res.status(200).json({
+    message: "User fetched successfully",
+    user: {
+      id: user.id,
+      fullname: user.fullname,
+      username: user.username,
+      email: user.email,
+      university: user.university,
+      department: user.department,
+      year: user.year,
+    },
+  });
 }
 
+export async function refreshToken(req, res) {
+  const refreshToken = req.cookies.refreshToken;
 
-export async function refreshToken(req, res){
-    const refreshToken = req.cookies.refreshToken;
+  if (!refreshToken) {
+    return res.status(401).json({ message: "Refresh token not found" });
+  }
 
-    if(!refreshToken){
-        return res.status(401).json({ message: "Unauthorized" });
-    }
+  const decodedToken = jwt.verify(refreshToken, config.jwtSecret);
 
-    const decodedToken = jwt.verify(refreshToken, config.jwtSecret);
-    const user = await prisma.user.findUnique({
-        where: {
-            id: decodedToken.id,
-        },
-    });
-    
-    if(!user){
-        return res.status(401).json({ message: "Unauthorized" });
-    }
+  const refreshTokenHash = crypto.createHash("sha256").update(refreshToken).digest("hex");
 
-    const accessToken = jwt.sign(
-        {
-            id: user.id,
-        },
-        config.jwtSecret,
-        {
-            expiresIn: "15m",
-        },
-    );
+  const session = await prisma.Session.findFirst({
+    where: {
+      refreshTokenHash: refreshTokenHash,
+      revoke: false,
+    },
+  });
 
-    const newRefreshToken = jwt.sign(
-        {
-            id: user.id,
-        },
-        config.jwtSecret,
-        {
-            expiresIn: "7d",
-        },
-    );
+  if (!session) {
+    return res.status(401).json({ message: "Invalid refresh token" });
+  }
 
-    res.cookie("refreshToken", newRefreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+  const user = await prisma.user.findUnique({
+    where: {
+      id: decodedToken.id,
+    },
+  });
 
-    return res.status(200).json({
-        message: "Refresh token fetched successfully",
-        token: accessToken,
-    });
+
+  if (!user) {
+    return res.status(401).json({ message: "User not found" });
+  }
+
+  const accessToken = jwt.sign(
+    {
+      id: user.id,
+      sessionId: session.id,
+    },
+    config.jwtSecret,
+    {
+      expiresIn: "15m",
+    },
+  );
+
+  const newRefreshToken = jwt.sign(
+    {
+      id: user.id,
+    },
+    config.jwtSecret,
+    {
+      expiresIn: "7d",
+    },
+  );
+
+  const newRefreshTokenHash = crypto.createHash("sha256").update(newRefreshToken).digest("hex");
+
+  await prisma.Session.update({
+    where: { id: session.id },
+    data: { refreshTokenHash: newRefreshTokenHash },
+  });
+
+  res.cookie("refreshToken", newRefreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+
+  return res.status(200).json({
+    message: "Refresh token fetched successfully",
+    token: accessToken,
+  });
+}
+
+export async function login(req, res) {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email: email },
+  });
+
+  if (!user) {
+    return res.status(400).json({ message: "User not found" });
+  }
+
+  const hashedLoginPassword = crypto
+    .createHash("sha256")
+    .update(password)
+    .digest("hex");
+
+  const isPasswordValid = hashedLoginPassword === user.password;
+
+  if (!isPasswordValid) {
+    return res.status(400).json({ message: "Invalid password" });
+  }
+
+  const refreshToken = jwt.sign(
+    {
+      id: user.id,
+    },
+    config.jwtSecret,
+    {
+      expiresIn: "7d",
+    },
+  );
+
+  const refreshTokenHash = crypto
+    .createHash("sha256")
+    .update(refreshToken)
+    .digest("hex");
+
+  const session = await prisma.Session.create({
+    data: {
+      userId: user.id,
+      refreshTokenHash: refreshTokenHash,
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+      revoke: false,
+    },
+  });
+
+  const accessToken = jwt.sign(
+    {
+      id: user.id,
+      sessionId: session.id,
+    },
+    config.jwtSecret,
+    {
+      expiresIn: "15m",
+    },
+  );
+
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+
+  return res.status(200).json({
+    message: "Login successful",
+    token: accessToken,
+  });
+}
+
+export async function logout(req, res) {
+  const refreshToken = req.cookies.refreshToken;
+
+  if(!refreshToken){
+    return res.status(401).json({ message: "Refresh token not found" });
+  }
+
+  const refreshTokenHash = crypto.createHash("sha256").update(refreshToken).digest("hex");
+
+  const session = await prisma.Session.findFirst({
+    where: {
+      refreshTokenHash: refreshTokenHash,
+      revoke: false,
+    },
+  });
+
+  if(!session){
+    return res.status(401).json({ message: "Invalid refresh token" });
+  }
+
+  await prisma.Session.update({
+    where: { id: session.id },
+    data: { revoke: true },
+  });
+
+  res.clearCookie("refreshToken");
+  return res.status(200).json({ message: "Logout successful" });
 }

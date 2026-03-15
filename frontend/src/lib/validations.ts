@@ -44,9 +44,18 @@ export type LoginFormData = z.infer<typeof loginSchema>;
 // ─── Signup ─────────────────────────────────────
 export const signupSchema = z.object({
   fullname: nameField,
-  username: z.string().trim().min(3, "Username must be at least 3 characters").max(50, "Username is too long"),
   email: emailField,
   password: passwordField,
+  confirmPassword: z.string().min(1, "Please confirm your password"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+export type SignupFormData = z.infer<typeof signupSchema>;
+
+// ─── Signup Step 2 (Profile Setup) ──────────────
+export const signupStep2Schema = z.object({
+  username: z.string().trim().min(3, "Username must be at least 3 characters").max(50, "Username is too long"),
   university: z
     .string()
     .trim()
@@ -55,7 +64,7 @@ export const signupSchema = z.object({
   branch: z.string().min(1, "Branch/Department is required"),
   year: z.string().min(1, "Year is required"),
 });
-export type SignupFormData = z.infer<typeof signupSchema>;
+export type SignupStep2Data = z.infer<typeof signupStep2Schema>;
 
 // ─── Contact ────────────────────────────────────
 export const contactSchema = z.object({

@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar";
 
+import { AtSign } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ const EditProfile = () => {
 
   const [form, setForm] = useState({
     name: "Priya Sharma",
+    username: "",
     email: "priya.sharma@iitd.ac.in",
     university: "IIT Delhi",
     branch: "Computer Science",
@@ -128,6 +130,17 @@ const EditProfile = () => {
                   <Input id="name" value={form.name} onChange={(e) => handleChange("name", e.target.value)} className="bg-background" maxLength={100} />
                   {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <div className="relative">
+                    <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input id="username" placeholder="Choose a unique username" value={form.username} onChange={(e) => handleChange("username", e.target.value)} className="bg-background pl-10" maxLength={50} />
+                  </div>
+                  {errors.username && <p className="text-xs text-destructive">{errors.username}</p>}
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input id="email" type="email" value={form.email} onChange={(e) => handleChange("email", e.target.value)} className="bg-background" maxLength={255} />

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { BookOpen, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,13 +16,14 @@ const Login = () => {
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 200);
     return () => clearTimeout(timer);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
@@ -38,8 +39,45 @@ const Login = () => {
     }
 
     setSubmitting(true);
-    toast({ title: "Login UI only", description: "Backend not connected yet." });
-    setTimeout(() => setSubmitting(false), 1000);
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast({
+          title: "Login Failed",
+          description: data.message || "Invalid email or password",
+          variant: "destructive",
+        });
+      } else {
+        if (data.token) {
+          localStorage.setItem("accessToken", data.token);
+        }
+
+        toast({
+          title: "Welcome Back!",
+          description: "You have successfully logged in.",
+        });
+
+        navigate("/");
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Could not connect to the server. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading) return <LoginSkeleton />;
