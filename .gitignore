@@ -1,0 +1,70 @@
+# Dependencies
+node_modules
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# Build and Output Folders
+dist
+dist-ssr
+build
+out
+.next
+/frontend/dist
+/backend/dist
+
+# Prisma
+/backend/src/generated/prisma
+/backend/prisma/generated
+/backend/prisma/*.db
+/backend/prisma/*.db-journal
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Vercel / Next.js / Nuxt / Gatsby (Catch-all for modern web frameworks)
+.vercel
+.output
+.nuxt
+.cache
+
+# Vite
+*.local
+
+# Testing
+coverage/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# IDEs and Editors
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Caches
+.npm
+.eslintcache
+.stylelintcache
