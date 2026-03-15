@@ -1,5 +1,7 @@
-import { BookOpen, Upload, Trophy, User, LogIn, Search, X, FileText, Star, ArrowRight, Menu, Home } from "lucide-react";
+import { BookOpen, Upload, Trophy, User, LogIn, LogOut, Search, X, FileText, Star, ArrowRight, Menu, Home } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useToast } from "@/hooks/use-toast";
+import api from "@/lib/axios";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,13 +25,12 @@ const allResources = [
   { title: "VLSI Design - Lab Experiments", subject: "Electronics & Comm.", type: "Notes", rating: 4.7, id: 11 },
 ];
 
-const mobileNavItems = [
+const baseMobileNavItems = [
   { icon: Home, label: "Home", path: "/" },
   { icon: Search, label: "Browse", path: "/browse" },
   { icon: Upload, label: "Upload", path: "/upload" },
   { icon: Trophy, label: "Scoreboard", path: "/scoreboard" },
   { icon: User, label: "Profile", path: "/profile" },
-  { icon: LogIn, label: "Login", path: "/login" },
 ];
 
 const Navbar = () => {
@@ -41,6 +42,25 @@ const Navbar = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
+  
+  // Checking auth state directly via localStorage
+  const isLoggedIn = !!localStorage.getItem("accessToken");
+
+  const handleLogout = async () => {
+    try {
+      await api.post("/api/auth/logout");
+    } catch (error) {
+      console.error(error); // Logout error shouldn't block clearing client state
+    } finally {
+      localStorage.removeItem("accessToken");
+      toast({
+        title: "Logged Out",
+        description: "You have successfully signed out.",
+      });
+      navigate("/login");
+    }
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -93,7 +113,11 @@ const Navbar = () => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        searchOpen ? closeSearch() : openSearch();
+        if (searchOpen) {
+          closeSearch();
+        } else {
+          openSearch();
+        }
       }
     };
     document.addEventListener("keydown", handler);
@@ -230,17 +254,29 @@ const Navbar = () => {
             </TooltipTrigger>
             <TooltipContent>Profile</TooltipContent>
           </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link to="/login" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Login to your account">
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-secondary hover:bg-secondary/10 transition-colors">
-                  <LogIn className="h-4 w-4" aria-hidden="true" />
-                  <span className="sr-only">Login</span>
+          {isLoggedIn ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={handleLogout} className="text-muted-foreground hover:text-secondary hover:bg-secondary/10 transition-colors" aria-label="Logout from your account">
+                  <LogOut className="h-4 w-4" aria-hidden="true" />
+                  <span className="sr-only">Logout</span>
                 </Button>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent>Login</TooltipContent>
-          </Tooltip>
+              </TooltipTrigger>
+              <TooltipContent>Logout</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link to="/login" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Login to your account">
+                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-secondary hover:bg-secondary/10 transition-colors">
+                    <LogIn className="h-4 w-4" aria-hidden="true" />
+                    <span className="sr-only">Login</span>
+                  </Button>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent>Login</TooltipContent>
+            </Tooltip>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <Link to="/upload" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Upload resources">
@@ -277,7 +313,7 @@ const Navbar = () => {
                 {/* Navigation Links */}
                 <nav className="flex-1 p-4">
                   <ul className="space-y-1">
-                    {mobileNavItems.map((item) => {
+                    {baseMobileNavItems.map((item) => {
                       const isActive = location.pathname === item.path;
                       return (
                         <li key={item.path}>
@@ -295,6 +331,33 @@ const Navbar = () => {
                         </li>
                       );
                     })}
+                    {/* Dynamic Auth Link for Mobile */}
+                    <li>
+                      {isLoggedIn ? (
+                        <button
+                          onClick={() => {
+                            setMobileMenuOpen(false);
+                            handleLogout();
+                          }}
+                          className="flex items-center gap-3 w-full rounded-lg px-4 py-3 text-left transition-colors text-muted-foreground hover:bg-muted hover:text-foreground"
+                        >
+                          <LogOut className="h-5 w-5" />
+                          <span className="text-sm">Logout</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleMobileNavClick("/login")}
+                          className={`flex items-center gap-3 w-full rounded-lg px-4 py-3 text-left transition-colors ${
+                            location.pathname === "/login"
+                              ? "bg-secondary/10 text-secondary font-medium"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          }`}
+                        >
+                          <LogIn className={`h-5 w-5 ${location.pathname === "/login" ? "text-secondary" : ""}`} />
+                          <span className="text-sm">Login</span>
+                        </button>
+                      )}
+                    </li>
                   </ul>
                 </nav>
 

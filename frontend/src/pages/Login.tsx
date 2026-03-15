@@ -7,6 +7,8 @@ import { LoginSkeleton } from "@/components/LoadingSkeleton";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { loginSchema } from "@/lib/validations";
+import api from "@/lib/axios";
+import { AxiosError } from "axios";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -41,38 +43,22 @@ const Login = () => {
     setSubmitting(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
+      const { data } = await api.post("/api/auth/login", { email, password });
+
+      localStorage.setItem("accessToken", data.token);
+
+      toast({
+        title: "Welcome Back!",
+        description: "You have successfully logged in.",
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        toast({
-          title: "Login Failed",
-          description: data.message || "Invalid email or password",
-          variant: "destructive",
-        });
-      } else {
-        if (data.token) {
-          localStorage.setItem("accessToken", data.token);
-        }
-
-        toast({
-          title: "Welcome Back!",
-          description: "You have successfully logged in.",
-        });
-
-        navigate("/");
-      }
+      navigate("/");
     } catch (error) {
+      const axiosError = error as AxiosError<{ message: string }>;
+      const message = axiosError.response?.data?.message || "Invalid email or password";
       toast({
-        title: "Error",
-        description: "Could not connect to the server. Please try again later.",
+        title: "Login Failed",
+        description: message,
         variant: "destructive",
       });
     } finally {

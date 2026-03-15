@@ -8,6 +8,8 @@ import { SignupSkeleton } from "@/components/LoadingSkeleton";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { signupSchema, signupStep2Schema } from "@/lib/validations";
+import api from "@/lib/axios";
+import { AxiosError } from "axios";
 
 
 const Signup = () => {
@@ -76,49 +78,33 @@ const Signup = () => {
     setSubmitting(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          fullname,
-          username,
-          email,
-          password,
-          university,
-          department: branch,
-          year: parseInt(year, 10),
-        }),
+      const { data } = await api.post("/api/auth/register", {
+        fullname,
+        username,
+        email,
+        password,
+        university,
+        department: branch,
+        year: parseInt(year, 10),
       });
 
-      const data = await response.json();
-      console.log(data);
-
-      if (!response.ok) {
-        toast({
-          title: "Registration Failed",
-          description: data.message || "Something went wrong",
-          variant: "destructive",
-        });
-      } else {
-        // Store the token so the user is logged in
-        if (data.token) {
-          localStorage.setItem("accessToken", data.token);
-        }
-
-        toast({
-          title: "Welcome to UniNotes! 🎉",
-          description: "Your account has been created successfully.",
-        });
-
-        // Redirect to edit profile for further customization
-        navigate("/profile/edit");
+      if (data.token) {
+        localStorage.setItem("accessToken", data.token);
       }
-    } catch (error) {
+
       toast({
-        title: "Error",
-        description: "Could not connect to the server. Please try again later.",
+        title: "Welcome to UniNotes! 🎉",
+        description: "Your account has been created successfully.",
+      });
+
+      navigate("/profile/edit");
+    } catch (error) {
+      const axiosError = error as AxiosError<{ message: string }>;
+      console.log(axiosError.response?.data?.message);
+      const message = axiosError.response?.data?.message || "Something went wrong";
+      toast({
+        title: "Registration Failed",
+        description: message,
         variant: "destructive",
       });
     } finally {
