@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 
 const allResources = [
@@ -43,15 +44,17 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
-  // Checking auth state directly via localStorage
   const isLoggedIn = !!localStorage.getItem("accessToken");
 
   const handleLogout = async () => {
     try {
       await api.post("/api/auth/logout");
+      queryClient.clear();
     } catch (error) {
-      console.error(error); // Logout error shouldn't block clearing client state
+      console.error(error); 
+      queryClient.clear(); 
     } finally {
       localStorage.removeItem("accessToken");
       toast({

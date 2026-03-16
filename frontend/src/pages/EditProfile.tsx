@@ -12,6 +12,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { editProfileSchema } from "@/lib/validations";
+import { useUser } from "@/hooks/use-user";
+import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import api from "@/lib/axios";
 
 const branches = [
   "Computer Science",
@@ -30,17 +34,38 @@ const EditProfile = () => {
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const { data: user, isLoading } = useUser();
+  const queryClient = useQueryClient();
+
   const [form, setForm] = useState({
-    name: "Priya Sharma",
+    name: "",
     username: "",
-    email: "priya.sharma@iitd.ac.in",
-    university: "IIT Delhi",
-    branch: "Computer Science",
-    year: "4th Year",
-    bio: "Final year CSE student passionate about sharing knowledge. I believe quality notes should be accessible to everyone.",
-    linkedin: "https://linkedin.com/in/priyasharma",
-    github: "https://github.com/priyasharma",
+    email: "",
+    university: "",
+    branch: "",
+    year: "1st Year",
+    bio: "",
+    linkedin: "",
+    github: "",
   });
+
+  // Populate form when user data is fetched
+  useEffect(() => {
+    if (user) {
+      setForm({
+        name: user.fullname || "",
+        username: user.username || "",
+        email: user.email || "",
+        university: user.university || "",
+        branch: user.department || "",
+        // Simple mapping for year; adjusts logic as per your backend (Int vs String)
+        year: user.year ? `${user.year}${user.year === 1 ? 'st' : user.year === 2 ? 'nd' : user.year === 3 ? 'rd' : 'th'} Year` : "1st Year",
+        bio: user.bio || "",
+        linkedin: "",
+        github: "",
+      });
+    }
+  }, [user]);
 
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -70,10 +95,28 @@ const EditProfile = () => {
     }
 
     setSubmitting(true);
+    
+    // Invalidate the query so it refetches next time or manually update
+    // Note: Since there is no backend update endpoint yet, this is just a placeholder
+    // If you add one, you would call it here.
+    
     toast({
       title: "Profile updated!",
-      description: "Your changes have been saved successfully.",
+      description: "Your changes have been saved successfully (local cache updated).",
     });
+
+    // Optimistically update the cache
+    queryClient.setQueryData(["user"], (old: any) => ({
+      ...old,
+      fullname: form.name,
+      username: form.username,
+      email: form.email,
+      university: form.university,
+      department: form.branch,
+      year: parseInt(form.year[0]), // "4th Year" -> 4
+      bio: form.bio,
+    }));
+
     setTimeout(() => {
       setSubmitting(false);
       navigate("/profile");

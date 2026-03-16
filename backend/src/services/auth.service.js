@@ -173,7 +173,7 @@ export async function logoutUser(refreshToken) {
 }
 
 export async function getUserProfile(userId) {
-  const user = await prisma.user.findUnique({
+  const user = await prisma.user.findFirst({
     where: { id: userId },
   });
 
@@ -183,3 +183,4 @@ export async function getUserProfile(userId) {
 
   return user;
 }
+

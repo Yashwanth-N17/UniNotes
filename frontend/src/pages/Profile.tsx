@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
+import { useUser } from "@/hooks/use-user";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -8,15 +9,11 @@ import { Button } from "@/components/ui/button";
 import { FileText, Download, Star, Clock, Upload, Award, TrendingUp, BookOpen, Edit, MapPin, GraduationCap, Calendar, Eye, Activity } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from "recharts";
 
-const user = {
-  name: "Priya Sharma",
+
+const mockStats = {
   initials: "PS",
-  university: "IIT Delhi",
-  branch: "Computer Science",
   semester: 6,
-  year: "4th Year",
   enrollmentNo: "2022CSE1045",
-  bio: "Final year CSE student passionate about sharing knowledge. I believe quality notes should be accessible to everyone.",
   joinDate: "Aug 2024",
   rank: 3,
   uploads: 24,
@@ -85,6 +82,28 @@ const typeColors: Record<string, string> = {
 };
 
 const Profile = () => {
+  const { data: userData, isLoading } = useUser();
+
+  const user = {
+    ...mockStats,
+    name: userData?.fullname || "Loading...",
+    university: userData?.university || "...",
+    branch: userData?.department || "...",
+    year: userData?.year ? `${userData?.year}${userData?.year === 1 ? 'st' : userData?.year === 2 ? 'nd' : userData?.year === 3 ? 'rd' : 'th'} Year` : "...",
+    bio: userData?.bio || "No bio yet.",
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container py-20 text-center">
+          <p className="text-muted-foreground animate-pulse">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -95,7 +114,9 @@ const Profile = () => {
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
             <div className="flex justify-center sm:justify-start">
               <Avatar className="h-24 w-24 border-4 border-secondary/20">
-                <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-bold">{user.initials}</AvatarFallback>
+                <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-bold">
+                  {user.name.split(" ").map(n => n[0]).join("")}
+                </AvatarFallback>
               </Avatar>
             </div>
             <div className="flex-1">
