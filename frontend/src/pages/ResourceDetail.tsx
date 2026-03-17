@@ -3,7 +3,8 @@ import StarRating from "@/components/StarRating";
 import { ResourceDetailSkeleton } from "@/components/LoadingSkeleton";
 import { motion } from "framer-motion";
 
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { useUser } from "@/hooks/use-user";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,6 +67,8 @@ const sectionVariants = {
 const ResourceDetail = () => {
   const { id } = useParams();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { data: user } = useUser();
   const [comment, setComment] = useState("");
   const [bookmarked, setBookmarked] = useState(false);
   const [userRating, setUserRating] = useState(0);
@@ -79,16 +82,31 @@ const ResourceDetail = () => {
   const resource = mockResource;
 
   const handleDownload = () => {
+    if (!user) {
+      toast({ title: "Login required", description: "Please log in to download resources.", variant: "destructive" });
+      navigate("/login", { state: { from: window.location.pathname } });
+      return;
+    }
     toast({ title: "Download started", description: `${resource.title} is downloading...` });
   };
 
   const handleBookmark = () => {
+    if (!user) {
+      toast({ title: "Login required", description: "Please log in to save resources.", variant: "destructive" });
+      navigate("/login", { state: { from: window.location.pathname } });
+      return;
+    }
     setBookmarked(!bookmarked);
     toast({ title: bookmarked ? "Removed from saved" : "Saved!", description: bookmarked ? "Resource removed from bookmarks" : "Resource added to your bookmarks" });
   };
 
   const handleComment = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      toast({ title: "Login required", description: "Please log in to comment.", variant: "destructive" });
+      navigate("/login", { state: { from: window.location.pathname } });
+      return;
+    }
     if (comment.trim()) {
       toast({ title: "Comment posted", description: "Your comment has been added (UI only)." });
       setComment("");
@@ -96,10 +114,20 @@ const ResourceDetail = () => {
   };
 
   const handleReport = () => {
+    if (!user) {
+      toast({ title: "Login required", description: "Please log in to report resources.", variant: "destructive" });
+      navigate("/login", { state: { from: window.location.pathname } });
+      return;
+    }
     toast({ title: "Report submitted", description: "We'll review this resource. Thanks for the feedback." });
   };
 
   const handleRate = (star: number) => {
+    if (!user) {
+      toast({ title: "Login required", description: "Please log in to rate resources.", variant: "destructive" });
+      navigate("/login", { state: { from: window.location.pathname } });
+      return;
+    }
     setUserRating(star);
     toast({ title: `Rated ${star} stars`, description: "Thanks for your feedback! (UI only)" });
   };
@@ -231,7 +259,14 @@ const ResourceDetail = () => {
               {/* User Rating */}
               <div className="mt-6 pt-4 border-t border-border">
                 <p className="text-sm font-medium text-foreground mb-2">Rate this resource</p>
-                <StarRating rating={userRating} onRate={handleRate} size="lg" interactive showValue />
+                {user ? (
+                  <StarRating rating={userRating} onRate={handleRate} size="lg" interactive showValue />
+                ) : (
+                  <div className="flex items-center justify-between rounded-lg bg-muted/30 p-3 border border-border/50">
+                    <p className="text-xs text-muted-foreground italic">Log in to rate this resource</p>
+                    <Button variant="link" size="sm" className="h-auto p-0 text-secondary" onClick={() => navigate("/login", { state: { from: window.location.pathname } })}>Login</Button>
+                  </div>
+                )}
               </div>
             </motion.div>
 
@@ -240,10 +275,17 @@ const ResourceDetail = () => {
               <h2 className="font-display text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
                 <MessageSquare className="h-5 w-5" /> Comments ({mockComments.length})
               </h2>
-              <form onSubmit={handleComment} className="mb-6 flex gap-2">
-                <Input placeholder="Add a comment..." value={comment} onChange={e => setComment(e.target.value)} className="flex-1" />
-                <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">Post</Button>
-              </form>
+              {user ? (
+                <form onSubmit={handleComment} className="mb-6 flex gap-2">
+                  <Input placeholder="Add a comment..." value={comment} onChange={e => setComment(e.target.value)} className="flex-1" />
+                  <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">Post</Button>
+                </form>
+              ) : (
+                <div className="mb-6 flex items-center justify-between rounded-xl bg-muted/40 p-4 border border-dashed border-border">
+                  <p className="text-sm text-muted-foreground italic">Have something to say? Log in to join the discussion.</p>
+                  <Button size="sm" variant="outline" className="text-secondary border-secondary/20 hover:bg-secondary/10" onClick={() => navigate("/login", { state: { from: window.location.pathname } })}>Login</Button>
+                </div>
+              )}
               <div className="space-y-4">
                 {mockComments.map((c, i) => (
                   <motion.div

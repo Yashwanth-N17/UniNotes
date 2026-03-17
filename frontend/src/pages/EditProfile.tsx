@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Camera, Save } from "lucide-react";
+import { ArrowLeft, Camera, Save, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,7 @@ import { useUser } from "@/hooks/use-user";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/axios";
+import { AxiosError } from "axios";
 
 const branches = [
   "Computer Science",
@@ -79,7 +80,7 @@ const EditProfile = () => {
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
@@ -96,31 +97,50 @@ const EditProfile = () => {
 
     setSubmitting(true);
     
-    // Invalidate the query so it refetches next time or manually update
-    // Note: Since there is no backend update endpoint yet, this is just a placeholder
-    // If you add one, you would call it here.
-    
-    toast({
-      title: "Profile updated!",
-      description: "Your changes have been saved successfully (local cache updated).",
-    });
+    try {
+      // Map year string to Int
+      let yearInt = 1;
+      if (form.year.includes("1st")) yearInt = 1;
+      else if (form.year.includes("2nd")) yearInt = 2;
+      else if (form.year.includes("3rd")) yearInt = 3;
+      else if (form.year.includes("4th")) yearInt = 4;
+      else if (form.year === "Postgraduate") yearInt = 5;
 
-    // Optimistically update the cache
-    queryClient.setQueryData(["user"], (old: any) => ({
-      ...old,
-      fullname: form.name,
-      username: form.username,
-      email: form.email,
-      university: form.university,
-      department: form.branch,
-      year: parseInt(form.year[0]), // "4th Year" -> 4
-      bio: form.bio,
-    }));
+      const payload = {
+        fullname: form.name,
+        username: form.username,
+        email: form.email,
+        bio: form.bio,
+        university: form.university,
+        department: form.branch,
+        year: yearInt,
+      };
 
-    setTimeout(() => {
-      setSubmitting(false);
+      await api.put("/api/auth/update-profile", payload);
+
+      // Invalidate the query so it refetches next time or manually update
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+      
+      toast({
+        title: "Profile updated!",
+        description: "Your changes have been saved successfully.",
+      });
+
+      // Navigate back to profile
       navigate("/profile");
-    }, 1000);
+    } catch (error) {
+      console.error("Update profile error:", error);
+      const axiosError = error as AxiosError<{ message: string }>;
+      const message = axiosError.response?.data?.message || "Something went wrong while updating your profile";
+      
+      toast({
+        title: "Update Failed",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

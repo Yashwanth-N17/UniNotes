@@ -137,6 +137,7 @@ export const editProfileSchema = z.object({
     .transform(sanitize)
     .optional()
     .or(z.literal("")),
+  username: z.string().trim().min(3, "Username must be at least 3 characters").max(50, "Username is too long"),
   branch: z.string().optional(),
   year: z.string().optional(),
   linkedin: urlField,

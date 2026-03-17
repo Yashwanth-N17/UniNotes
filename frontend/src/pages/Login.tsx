@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { BookOpen, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { loginSchema } from "@/lib/validations";
 import api from "@/lib/axios";
 import { AxiosError } from "axios";
+import { useQueryClient } from "@tanstack/react-query";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -19,6 +20,10 @@ const Login = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const location = useLocation();
+
+  const from = location.state?.from?.pathname || "/";
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 200);
@@ -47,12 +52,14 @@ const Login = () => {
 
       localStorage.setItem("accessToken", data.token);
 
+      await queryClient.invalidateQueries({ queryKey: ["user"] });
+
       toast({
         title: "Welcome Back!",
         description: "You have successfully logged in.",
       });
 
-      navigate("/");
+      navigate(from, { replace: true });
     } catch (error) {
       const axiosError = error as AxiosError<{ message: string }>;
       const message = axiosError.response?.data?.message || "Invalid email or password";

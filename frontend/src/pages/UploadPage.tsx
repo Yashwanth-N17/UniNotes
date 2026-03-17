@@ -10,6 +10,9 @@ import { Label } from "@/components/ui/label";
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { uploadSchema, validateFiles } from "@/lib/validations";
+import { useUser } from "@/hooks/use-user";
+import { useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
 const UploadPage = () => {
   const [dragOver, setDragOver] = useState(false);
@@ -27,10 +30,38 @@ const UploadPage = () => {
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  const { data: user, isLoading: userLoading } = useUser();
+  const navigate = useNavigate();
+
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 200);
     return () => clearTimeout(timer);
   }, []);
+
+  if (userLoading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground">
+        <Navbar />
+        <div className="container py-20 flex flex-col items-center justify-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-secondary" />
+          <p className="text-muted-foreground animate-pulse font-medium">Preparing upload space...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container py-20 text-center">
+          <h2 className="text-2xl font-bold">Please log in</h2>
+          <p className="mt-2 text-muted-foreground">You need to be logged in to upload resources.</p>
+          <Button onClick={() => navigate("/login")} className="mt-4">Go to Login</Button>
+        </div>
+      </div>
+    );
+  }
 
   const handleFiles = (newFiles: FileList | null) => {
     if (!newFiles) return;

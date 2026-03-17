@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useUser } from "@/hooks/use-user";
 import { useToast } from "@/hooks/use-toast";
 import { useDebounce } from "@/hooks/use-debounce";
 
@@ -80,6 +81,8 @@ const Browse = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { data: user } = useUser();
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 200);
@@ -94,12 +97,22 @@ const Browse = () => {
   const handleDownload = (e: React.MouseEvent, title: string) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!user) {
+      toast({ title: "Login required", description: "Please log in to download resources.", variant: "destructive" });
+      navigate("/login", { state: { from: window.location.pathname } });
+      return;
+    }
     toast({ title: "Download started", description: `${title} is downloading...` });
   };
 
   const handleBookmark = (e: React.MouseEvent, title: string) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!user) {
+      toast({ title: "Login required", description: "Please log in to save resources.", variant: "destructive" });
+      navigate("/login", { state: { from: window.location.pathname } });
+      return;
+    }
     toast({ title: "Saved! 🔖", description: `${title} added to bookmarks` });
   };
 

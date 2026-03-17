@@ -1,4 +1,4 @@
-import { BookOpen, Upload, Trophy, User, LogIn, LogOut, Search, X, FileText, Star, ArrowRight, Menu, Home } from "lucide-react";
+import { BookOpen, Upload, Trophy, User, LogIn, LogOut, Search, X, FileText, Star, ArrowRight, Menu, Home, Loader2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/axios";
@@ -10,6 +10,8 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
+import { useUser } from "@/hooks/use-user";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const allResources = [
   { title: "Data Structures & Algorithms - Complete Notes", subject: "Computer Science", type: "Notes", rating: 4.8, id: 0 },
@@ -46,7 +48,8 @@ const Navbar = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const isLoggedIn = !!localStorage.getItem("accessToken");
+  const { data: user, isLoading: userLoading } = useUser();
+  const isLoggedIn = !!user;
 
   const handleLogout = async () => {
     try {
@@ -249,8 +252,16 @@ const Navbar = () => {
           <Tooltip>
             <TooltipTrigger asChild>
               <Link to="/profile" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="View profile">
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-secondary hover:bg-secondary/10 transition-colors">
-                  <User className="h-4 w-4" aria-hidden="true" />
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-secondary hover:bg-secondary/10 transition-colors p-0 overflow-hidden">
+                  {isLoggedIn ? (
+                    <Avatar className="h-7 w-7 border border-border">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-[10px] font-bold">
+                        {user.fullname.split(" ").map((n: string) => n[0]).join("")}
+                      </AvatarFallback>
+                    </Avatar>
+                  ) : (
+                    <User className="h-4 w-4" aria-hidden="true" />
+                  )}
                   <span className="sr-only">Profile</span>
                 </Button>
               </Link>

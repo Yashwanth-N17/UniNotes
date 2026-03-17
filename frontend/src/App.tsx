@@ -10,6 +10,7 @@ import { lazy, Suspense } from "react";
 import RouteProgressBar from "@/components/RouteProgressBar";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import MobileSplashScreen from "@/components/MobileSplashScreen";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import {
   IndexSkeleton,
   BrowseSkeleton,
@@ -80,13 +81,13 @@ const AnimatedRoutes = () => {
         <Routes location={location}>
           <Route path="/" element={<Suspense fallback={<IndexSkeleton />}><Index /></Suspense>} />
           <Route path="/browse" element={<Suspense fallback={<BrowseSkeleton />}><Browse /></Suspense>} />
-          <Route path="/upload" element={<Suspense fallback={<UploadPageSkeleton />}><UploadPage /></Suspense>} />
+          <Route path="/upload" element={<Suspense fallback={<UploadPageSkeleton />}><ProtectedRoute><UploadPage /></ProtectedRoute></Suspense>} />
           <Route path="/scoreboard" element={<Suspense fallback={<ScoreboardSkeleton />}><Scoreboard /></Suspense>} />
           <Route path="/subject/:slug" element={<Suspense fallback={<SubjectPageSkeleton />}><SubjectPage /></Suspense>} />
           <Route path="/subject/:slug/:subjectSlug" element={<Suspense fallback={<SubjectDetailSkeleton />}><SubjectDetail /></Suspense>} />
-          <Route path="/profile" element={<Suspense fallback={<ProfileSkeleton />}><Profile /></Suspense>} />
-          <Route path="/profile/edit" element={<Suspense fallback={<EditProfileSkeleton />}><EditProfile /></Suspense>} />
-          <Route path="/bookmarks" element={<Suspense fallback={<BrowseSkeleton />}><Bookmarks /></Suspense>} />
+          <Route path="/profile" element={<Suspense fallback={<ProfileSkeleton />}><ProtectedRoute><Profile /></ProtectedRoute></Suspense>} />
+          <Route path="/profile/edit" element={<Suspense fallback={<EditProfileSkeleton />}><ProtectedRoute><EditProfile /></ProtectedRoute></Suspense>} />
+          <Route path="/bookmarks" element={<Suspense fallback={<BrowseSkeleton />}><ProtectedRoute><Bookmarks /></ProtectedRoute></Suspense>} />
           <Route path="/login" element={<Suspense fallback={<LoginSkeleton />}><Login /></Suspense>} />
           <Route path="/signup" element={<Suspense fallback={<SignupSkeleton />}><Signup /></Suspense>} />
           <Route path="/resource/:id" element={<Suspense fallback={<ResourceDetailSkeleton />}><ResourceDetail /></Suspense>} />

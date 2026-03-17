@@ -59,7 +59,7 @@ export default defineConfig(({ mode }) => ({
           },
         ],
       },
-      includeAssets: ["favicon.ico"],
+      includeAssets: [""],
       manifest: {
         name: "UniNotes - Student Study Materials",
         short_name: "UniNotes",

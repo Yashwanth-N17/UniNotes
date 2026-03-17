@@ -3,12 +3,14 @@ import EmptyState from "@/components/EmptyState";
 import { ResourceGridSkeleton } from "@/components/LoadingSkeleton";
 import PullToRefresh from "@/components/PullToRefresh";
 import { motion } from "framer-motion";
-import { FileText, Download, Star, Clock, Bookmark, Share2 } from "lucide-react";
+import { FileText, Download, Star, Clock, Bookmark, Share2, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import emptyBookmarksImg from "@/assets/empty-bookmarks.png";
+import { useUser } from "@/hooks/use-user";
 
 const bookmarks = [
   { title: "Data Structures & Algorithms - Complete Notes", subject: "Computer Science", author: "Priya S.", type: "Notes", rating: 4.8, downloads: 1240, time: "Saved 2 days ago", university: "IIT Delhi" },
@@ -41,10 +43,38 @@ const Bookmarks = () => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  const { data: user, isLoading: userLoading } = useUser();
+  const navigate = useNavigate();
+
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 200);
     return () => clearTimeout(timer);
   }, []);
+
+  if (userLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container py-20 flex flex-col items-center justify-center gap-4 text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-secondary" />
+          <p className="text-muted-foreground animate-pulse font-medium">Fetching your bookmarks...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container py-20 text-center">
+          <h2 className="text-2xl font-bold">Please log in</h2>
+          <p className="mt-2 text-muted-foreground">You need to be logged in to access your saved resources.</p>
+          <Button onClick={() => navigate("/login")} className="mt-4">Go to Login</Button>
+        </div>
+      </div>
+    );
+  }
 
   const handleDownload = (title: string) => {
     toast({ title: "Download started", description: `${title} is downloading...` });

@@ -90,3 +90,17 @@ export async function logout(req, res) {
     res.status(400).json({ message: error.message });
   }
 }
+
+
+export async function updateUser(req, res) {
+  try {
+    const user = await authService.updateUserProfile(req.user.id, req.body);
+
+    res.json({
+      message: "User updated successfully",
+      user,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+}

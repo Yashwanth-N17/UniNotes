@@ -8,6 +8,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { FileText, Download, Star, Clock, Upload, Award, TrendingUp, BookOpen, Edit, MapPin, GraduationCap, Calendar, Eye, Activity } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from "recharts";
+import { useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
 
 const mockStats = {
@@ -82,6 +84,7 @@ const typeColors: Record<string, string> = {
 };
 
 const Profile = () => {
+  const navigate = useNavigate();
   const { data: userData, isLoading } = useUser();
 
   const user = {
@@ -93,16 +96,6 @@ const Profile = () => {
     bio: userData?.bio || "No bio yet.",
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="container py-20 text-center">
-          <p className="text-muted-foreground animate-pulse">Loading profile...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">

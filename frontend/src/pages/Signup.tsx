@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { BookOpen, Mail, Lock, User, Eye, EyeOff, GraduationCap, AtSign, ArrowRight, ArrowLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { signupSchema, signupStep2Schema } from "@/lib/validations";
 import api from "@/lib/axios";
 import { AxiosError } from "axios";
+import { useQueryClient } from "@tanstack/react-query";
 
 
 const Signup = () => {
@@ -34,6 +35,9 @@ const Signup = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || "/profile/edit";
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 200);
@@ -92,12 +96,14 @@ const Signup = () => {
         localStorage.setItem("accessToken", data.token);
       }
 
+      await queryClient.invalidateQueries({ queryKey: ["user"] });
+
       toast({
         title: "Welcome to UniNotes! 🎉",
         description: "Your account has been created successfully.",
       });
 
-      navigate("/profile/edit");
+      navigate(from, { replace: true });
     } catch (error) {
       const axiosError = error as AxiosError<{ message: string }>;
       console.log(axiosError.response?.data?.message);

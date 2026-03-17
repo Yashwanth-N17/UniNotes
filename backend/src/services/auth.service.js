@@ -184,3 +184,29 @@ export async function getUserProfile(userId) {
   return user;
 }
 
+export async function updateUserProfile(userId, data) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      fullname: data.fullname,
+      username: data.username,
+      email: data.email,
+      bio: data.bio,
+      university: data.university,
+      department: data.department,
+      year: data.year,
+    },
+  });
+
+  return updatedUser;
+}
+
+
