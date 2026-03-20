@@ -93,22 +93,15 @@ export const uploadSchema = z.object({
     .min(1, "Title is required")
     .max(200, "Title must be under 200 characters")
     .transform(sanitize),
-  department: z.string().min(1, "Department is required"),
-  semester: z.string().min(1, "Semester is required"),
   subject: z
     .string()
     .trim()
     .min(1, "Subject is required")
     .max(200, "Subject must be under 200 characters")
     .transform(sanitize),
-  resourceType: z.string().min(1, "Resource type is required"),
-  tags: z
+  resourceType: z
     .string()
-    .trim()
-    .max(300, "Tags must be under 300 characters")
-    .transform(sanitize)
-    .optional()
-    .or(z.literal("")),
+    .min(1, "Resource type is required"),
   description: z
     .string()
     .trim()

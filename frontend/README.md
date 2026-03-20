@@ -1,51 +1,69 @@
-# UniNotes Frontend
+# UniNotes Frontend 🎨
 
-> **Disclaimer:** This frontend application was initially developed using AI tools and was not developed entirely manually by me.
+> **⚠️ DISCLAIMER:** This project is a production of AI-assisted development. While the logic and structure have been refined, it was initially generated and iterated upon using advanced AI coding assistants.
 
-## About The Project
+UniNotes is a modern, high-performance web application designed for students to share and access academic resources like notes, PYQs, and solutions.
 
-UniNotes is a student-driven platform for sharing study materials, notes, and previous year questions.
+---
 
-## How to Edit This Code
+## 🚀 Quick Start Instructions
 
-You can work locally using your preferred IDE.
+Follow these steps to get the frontend running on your local machine:
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### 1. Prerequisites
+Ensure you have **Node.js (v18+)** and **npm** installed.
 
-Follow these steps:
+### 2. Installation
+Clone the repository and install dependencies:
+```bash
+# Navigate to the frontend directory
+cd frontend
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# Install all required packages
+npm install
 ```
 
-**Use GitHub Codespaces**
+### 3. Environment Setup
+Create a `.env` file in the `frontend` root:
+```env
+VITE_API_URL=http://localhost:5000/api
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### 4. Development Mode
+Start the Vite development server:
+```bash
+npm run dev
+```
+The app will be available at `http://localhost:5173`.
 
-## Technologies Used
+### 5. Production Build
+To create an optimized production bundle:
+```bash
+npm run build
+```
+The output will be in the `dist/` folder.
 
-This project is built with:
+---
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 🛠️ Technology Stack
 
-## Deployment
+- **Core:** [React 18](https://react.dev/) + [Vite](https://vitejs.dev/)
+- **Language:** [TypeScript](https://www.typescriptlang.org/)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+- **UI Components:** [shadcn/ui](https://ui.shadcn.com/) (Radix UI)
+- **State & Data:** [TanStack Query (React Query)](https://tanstack.com/query/latest) & [Axios](https://axios-http.com/)
+- **Animations:** [Framer Motion](https://www.framer.com/motion/)
+- **Forms:** [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/)
 
-You can deploy this application using standard platforms like Vercel, Netlify, or any other static hosting service. Simply connect your repository and set the build command to `npm run build` and the publish directory to `dist`.
+---
+
+## 📂 Project Structure
+
+- `src/components`: Reusable UI components (shadcn + custom)
+- `src/pages`: Main application views/pages
+- `src/hooks`: Custom React hooks for logic reuse
+- `src/services`: API communication logic (Axios fetchers)
+- `src/lib`: Utility functions and configuration (e.g., `utils.ts` for Tailwind)
+
+---
+*Built with focus on user experience, speed, and clean design.*

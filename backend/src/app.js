@@ -1,11 +1,13 @@
 import express from "express";
 import dotenv from "dotenv";
+dotenv.config();
 import { connectToDB } from "./config/db.js";
 import authRouter from "./routes/auth.routes.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
-dotenv.config();
+import resourcesRouter from "./routes/resources.routes.js";
+
 const app = express();
 connectToDB();
 
@@ -20,5 +22,6 @@ app.use(cors({
 }));
 app.use(cookieParser());
 app.use("/api/auth",authRouter);
+app.use("/api/resources", resourcesRouter);
 
-export default app; 
+export default app;

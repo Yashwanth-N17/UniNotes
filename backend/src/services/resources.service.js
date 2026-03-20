@@ -1,0 +1,45 @@
+import {prisma} from "../config/db.js";
+import {v2 as cloudinary} from "cloudinary";
+import "../config/cloudinary.js";
+
+export async function uploadResource(data, file, req){
+
+    try{
+        const {title, subject, resourceType, description} = data;
+    
+        if(!title || !subject || !resourceType || !description){
+            throw new Error("All fields except file are required");
+        }
+
+        if(!file){
+            throw new Error("File is required or unsupported file type!");
+        }
+
+        const uploadResult = await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream({ 
+                resource_type: "auto", 
+                folder: "resources" 
+            }, (error, result) => {
+                if (error) reject(error);
+                else resolve(result);
+            });
+            stream.end(file.buffer);
+        });
+
+        const resource = await prisma.resources.create({
+            data: {
+                title: title.trim(),
+                subject: subject.trim(),
+                resourceType: resourceType.trim(),
+                description: description.trim(),
+                fileLink: uploadResult.secure_url,
+                userId: req.user.id
+            }
+        })
+        return resource;
+    }
+    catch(error){
+        console.log("Error in upload Resources Service", error);
+        throw error;
+    }
+}
