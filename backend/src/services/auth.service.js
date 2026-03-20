@@ -1,5 +1,5 @@
 import { prisma } from "../config/db.js";
-import { hashData } from "../utils/hash.js";
+import { hashData, hashPassword, comparePassword, compareData } from "../utils/hash.js";
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -32,7 +32,7 @@ export async function registerUser(data, req) {
     throw new Error("User already registered");
   }
 
-  const hashedPassword = hashData(password);
+  const hashedPassword = await hashPassword(password);
 
   const user = await prisma.user.create({
     data: {
@@ -47,7 +47,7 @@ export async function registerUser(data, req) {
   });
 
   const refreshToken = generateRefreshToken({ id: user.id });
-  const refreshTokenHash = hashData(refreshToken);
+  const refreshTokenHash = await hashData(refreshToken);
 
   const session = await prisma.session.create({
     data: {
@@ -76,14 +76,13 @@ export async function loginUser(email, password, req) {
     throw new Error("User not found");
   }
 
-  const hashedPassword = hashData(password);
-
-  if (hashedPassword !== user.password) {
+  const isPasswordValid = await comparePassword(password, user.password);
+  if (!isPasswordValid) {
     throw new Error("Invalid password");
   }
 
   const refreshToken = generateRefreshToken({ id: user.id });
-  const refreshTokenHash = hashData(refreshToken);
+  const refreshTokenHash = await hashData(refreshToken);
 
   const session = await prisma.session.create({
     data: {
@@ -109,14 +108,21 @@ export async function refreshUserToken(refreshToken) {
   }
 
   const decoded = verifyToken(refreshToken);
-  const refreshTokenHash = hashData(refreshToken);
-
-  const session = await prisma.session.findFirst({
+  
+  const sessions = await prisma.session.findMany({
     where: {
-      refreshTokenHash,
+      userId: decoded.id,
       revoke: false,
     },
   });
+
+  let session = null;
+  for (const s of sessions) {
+    if (await compareData(refreshToken, s.refreshTokenHash)) {
+      session = s;
+      break;
+    }
+  }
 
   if (!session) {
     throw new Error("Invalid refresh token");
@@ -136,7 +142,7 @@ export async function refreshUserToken(refreshToken) {
   });
 
   const newRefreshToken = generateRefreshToken({ id: user.id });
-  const newRefreshTokenHash = hashData(newRefreshToken);
+  const newRefreshTokenHash = await hashData(newRefreshToken);
 
   await prisma.session.update({
     where: { id: session.id },
@@ -151,14 +157,27 @@ export async function logoutUser(refreshToken) {
     throw new Error("Refresh token not found");
   }
 
-  const refreshTokenHash = hashData(refreshToken);
+  let decoded;
+  try {
+    decoded = verifyToken(refreshToken);
+  } catch (error) {
+    throw new Error("Invalid refresh token session");
+  }
 
-  const session = await prisma.session.findFirst({
+  const sessions = await prisma.session.findMany({
     where: {
-      refreshTokenHash,
+      userId: decoded.id,
       revoke: false,
     },
   });
+
+  let session = null;
+  for (const s of sessions) {
+    if (await compareData(refreshToken, s.refreshTokenHash)) {
+      session = s;
+      break;
+    }
+  }
 
   if (!session) {
     throw new Error("Invalid refresh token");
