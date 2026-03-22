@@ -30,6 +30,8 @@ const UploadPage = () => {
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("");
   const [resourceType, setResourceType] = useState("");
+  const [department, setDepartment] = useState("");
+  const [semester, setSemester] = useState("");
   const [description, setDescription] = useState("");
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -110,6 +112,8 @@ const UploadPage = () => {
       title,
       subject,
       resourceType,
+      department,
+      semester,
       description,
     });
 
@@ -139,6 +143,8 @@ const UploadPage = () => {
       formData.append("title", title);
       formData.append("subject", subject);
       formData.append("resourceType", resourceType);
+      formData.append("department", department);
+      formData.append("semester", semester);
       formData.append("description", description);
 
       formData.append("file", files[0]);
@@ -253,6 +259,44 @@ const UploadPage = () => {
                     {errors.resourceType}
                   </p>
                 )}
+              </div>
+            </div>
+
+            {/* Department and Semester Row */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="text-foreground">Department</Label>
+                <Select value={department} onValueChange={setDepartment}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Select Department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Computer Science">Computer Science</SelectItem>
+                    <SelectItem value="Electrical Engineering">Electrical Engineering</SelectItem>
+                    <SelectItem value="Mechanical Engineering">Mechanical Engineering</SelectItem>
+                    <SelectItem value="Electronics & Comm.">Electronics & Comm.</SelectItem>
+                    <SelectItem value="Civil Engineering">Civil Engineering</SelectItem>
+                    <SelectItem value="Chemical Engineering">Chemical Engineering</SelectItem>
+                    <SelectItem value="Information Technology">Information Technology</SelectItem>
+                    <SelectItem value="Industrial Engineering">Industrial Engineering</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.department && <p className="text-xs text-destructive">{errors.department}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-foreground">Semester</Label>
+                <Select value={semester} onValueChange={setSemester}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Select Semester" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
+                      <SelectItem key={sem} value={String(sem)}>Semester {sem}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.semester && <p className="text-xs text-destructive">{errors.semester}</p>}
               </div>
             </div>
 

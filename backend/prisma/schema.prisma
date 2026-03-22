@@ -41,7 +41,10 @@ model resources {
   resourceType String
   description  String
   fileLink     String
-  
+
+  department  String
+  semester    Int  
+
   userId       String
   user         user     @relation(fields: [userId], references: [id])
 
@@ -49,5 +52,5 @@ model resources {
   updatedAt    DateTime @updatedAt
 
   @@index([userId])
+  @@index([department, semester])
 }
-

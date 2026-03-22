@@ -102,6 +102,12 @@ export const uploadSchema = z.object({
   resourceType: z
     .string()
     .min(1, "Resource type is required"),
+  department: z
+    .string()
+    .min(1, "Department is required"),
+  semester: z
+    .string()
+    .min(1, "Semester is required"),
   description: z
     .string()
     .trim()

@@ -162,6 +162,8 @@ All routes are prefixed with `/api`.
   - `title`: String
   - `subject`: String
   - `resourceType`: String (e.g., "Notes", "PYQ")
+  - `department`: String
+  - `semester`: Int
   - `description`: String
 - **Description:** Uploads a file to Cloudinary and creates a resource entry in the database pinned to the user.
 
@@ -169,6 +171,15 @@ All routes are prefixed with `/api`.
 - **Endpoint:** `GET /getUserResources`
 - **Auth Required:** **Yes** (Bearer Token)
 - **Description:** Fetches all resources uploaded by the authenticated user.
+
+#### 3. Get All Resources (with Filtering)
+- **Endpoint:** `GET /getAllResources`
+- **Auth Required:** No
+- **Query Parameters:**
+  - `department`: String (e.g., "Computer Science")
+  - `subject`: String (e.g., "Data Structures")
+  - `semester`: Int (e.g., 3)
+- **Description:** Fetches all resources with optional server-side filtering and includes uploader details.
 
 
 ---
@@ -207,6 +218,8 @@ All routes are prefixed with `/api`.
 | `resourceType` | String | Type (Notes, PYQ, etc.) |
 | `description` | String | Detailed description |
 | `fileLink` | String | URL to the hosted file (Cloudinary) |
+| `department` | String | Targeted academic department |
+| `semester` | Int | Academic semester |
 | `userId` | UUID | Foreign Key (Owner) |
 | `createdAt` | DateTime | Timestamp of upload |
 
