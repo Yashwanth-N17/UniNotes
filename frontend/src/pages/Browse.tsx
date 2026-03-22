@@ -15,21 +15,19 @@ import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "@/hooks/use-user";
 import { useToast } from "@/hooks/use-toast";
 import { useDebounce } from "@/hooks/use-debounce";
+import axios from "axios";
 
-const allResources = [
-  { title: "Data Structures & Algorithms - Complete Notes", subject: "Computer Science", author: "Priya S.", type: "Notes", rating: 4.8, downloads: 1240, time: "2 hours ago", university: "IIT Delhi", semester: 3 },
-  { title: "Engineering Mathematics III - PYQ 2024", subject: "Mechanical Engineering", author: "Rahul K.", type: "PYQ", rating: 4.9, downloads: 890, time: "5 hours ago", university: "NIT Trichy", semester: 3 },
-  { title: "Digital Electronics - Handwritten Notes", subject: "Electronics & Comm.", author: "Ananya M.", type: "Notes", rating: 4.7, downloads: 670, time: "8 hours ago", university: "BITS Pilani", semester: 3 },
-  { title: "Operating Systems - Mid Sem Solutions", subject: "Computer Science", author: "Vikram P.", type: "Solutions", rating: 4.6, downloads: 540, time: "12 hours ago", university: "IIT Bombay", semester: 5 },
-  { title: "Thermodynamics - Formula Sheet", subject: "Mechanical Engineering", author: "Sneha R.", type: "Cheat Sheet", rating: 4.9, downloads: 2100, time: "1 day ago", university: "IIT Madras", semester: 3 },
-  { title: "Power Systems - Chapter Summaries", subject: "Electrical Engineering", author: "Arjun D.", type: "Notes", rating: 4.5, downloads: 430, time: "1 day ago", university: "Delhi University", semester: 5 },
-  { title: "Database Management Systems - Lab Manual", subject: "Information Technology", author: "Kavya L.", type: "Notes", rating: 4.7, downloads: 780, time: "2 days ago", university: "VIT Vellore", semester: 4 },
-  { title: "Structural Analysis - Practice Problems", subject: "Civil Engineering", author: "Rohan T.", type: "PYQ", rating: 4.8, downloads: 950, time: "2 days ago", university: "IIT Kanpur", semester: 5 },
-  { title: "Chemical Process Design - Notes", subject: "Chemical Engineering", author: "Meera J.", type: "Notes", rating: 4.6, downloads: 620, time: "3 days ago", university: "IIT Kharagpur", semester: 6 },
-  { title: "Machine Learning - Complete Guide", subject: "Computer Science", author: "Amit S.", type: "Notes", rating: 4.9, downloads: 1850, time: "3 days ago", university: "IIT Delhi", semester: 7 },
-  { title: "Fluid Mechanics - Solved Examples", subject: "Civil Engineering", author: "Neha P.", type: "Solutions", rating: 4.5, downloads: 380, time: "4 days ago", university: "NIT Warangal", semester: 4 },
-  { title: "VLSI Design - Lab Experiments", subject: "Electronics & Comm.", author: "Karan M.", type: "Notes", rating: 4.7, downloads: 510, time: "4 days ago", university: "BITS Pilani", semester: 6 },
-];
+export interface ResourceItem {
+  title: string;
+  subject: string;
+  author: string;
+  type: string;
+  rating: number;
+  downloads: number;
+  time: string;
+  university: string;
+  semester: number;
+}
 
 const departments = [
   { name: "Computer Science", slug: "computer-science", resources: 2340, icon: "💻" },
@@ -84,10 +82,36 @@ const Browse = () => {
   const navigate = useNavigate();
   const { data: user } = useUser();
 
+  const [allResources, setAllResources] = useState<ResourceItem[]>([]);
+
+  const fetchResources = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get("http://localhost:3000/api/resources/getAllResources");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mapped: ResourceItem[] = res.data.resources.map((r: any) => ({
+        title: r.title || "Untitled",
+        subject: r.subject || "General",
+        author: r.user?.fullname || "Unknown",
+        type: r.resourceType || "Notes",
+        rating: 4.5,
+        downloads: Math.floor(Math.random() * 500) + 100,
+        time: new Date(r.createdAt).toLocaleDateString(),
+        university: r.user?.university || "Unknown",
+        semester: 1
+      }));
+      setAllResources(mapped);
+    } catch (error) {
+      console.error("Error fetching resources:", error);
+      toast({ title: "Error", description: "Failed to load resources", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 200);
-    return () => clearTimeout(timer);
-  }, []);
+    fetchResources();
+  }, [fetchResources]);
 
   // Reset visible count when filters change
   useEffect(() => {
@@ -124,9 +148,7 @@ const Browse = () => {
   };
 
   const handleRefresh = async () => {
-    setLoading(true);
-    await new Promise(r => setTimeout(r, 600));
-    setLoading(false);
+    await fetchResources();
   };
 
   const filtered = allResources

@@ -1,10 +1,12 @@
 import { Router } from "express";
-import {authenticate} from "../middlewares/auth.middleware.js";
+import { authenticate } from "../middlewares/auth.middleware.js";
 import * as resourcesController from "../controllers/resources.controller.js";
-import {upload} from "../utils/multer.js";
+import { upload } from "../utils/multer.js";
 
-const router = Router();
+const resourcesRouter = Router();
 
-router.post("/upload", authenticate, upload.single("file"), resourcesController.handleUploadResource);
+resourcesRouter.post("/upload", authenticate, upload.single("file"), resourcesController.handleUploadResource);
+resourcesRouter.get("/getUserResources", authenticate, resourcesController.handleGetUserResources);
+resourcesRouter.get("/getAllResources", resourcesController.handleGetAllResources);
 
-export default router;
+export default resourcesRouter;

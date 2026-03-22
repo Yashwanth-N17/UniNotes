@@ -43,3 +43,55 @@ export async function uploadResource(data, file, req){
         throw error;
     }
 }
+
+export async function getUserResources(req){
+    try{
+        const resources = await prisma.resources.findMany({
+            where: {
+                userId: req.user.id
+            }
+        })
+        return resources;
+    }
+    catch(error){
+        console.log("Error in getUserResources Service", error);
+        throw error;
+    }
+}
+
+export async function getAllResources(filters = {}){
+    try{
+        const whereClause = {};
+
+        if (filters.subject) {
+            whereClause.subject = { equals: filters.subject, mode: 'insensitive' };
+        }
+
+        if (filters.department) {
+            whereClause.user = {
+                department: { equals: filters.department, mode: 'insensitive' }
+            };
+        }
+
+        const resources = await prisma.resources.findMany({
+            where: whereClause,
+            include: {
+                user: {
+                    select: {
+                        fullname: true,
+                        university: true,
+                        department: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+        return resources;
+    }
+    catch(error){
+        console.log("Error in getAllResources Service", error);
+        throw error;
+    }
+}

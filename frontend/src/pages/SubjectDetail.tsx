@@ -7,34 +7,24 @@ import { Badge } from "@/components/ui/badge";
 import { FileText, Download, Star, Clock, ArrowLeft, BookOpen, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import axios from "axios";
 
-const allResources = [
-  { title: "DSA - Complete Notes", subjectSlug: "data-structures-and-algorithms", dept: "computer-science", author: "Priya S.", type: "Notes", rating: 4.8, downloads: 1240, time: "2 hours ago", university: "IIT Delhi", semester: 3, year: 2024, difficulty: "Medium" },
-  { title: "DSA - PYQ 2024", subjectSlug: "data-structures-and-algorithms", dept: "computer-science", author: "Rahul K.", type: "PYQ", rating: 4.7, downloads: 890, time: "1 day ago", university: "NIT Trichy", semester: 3, year: 2024, difficulty: "Hard" },
-  { title: "DSA - Mid Sem Solutions", subjectSlug: "data-structures-and-algorithms", dept: "computer-science", author: "Vikram P.", type: "Solutions", rating: 4.6, downloads: 540, time: "3 days ago", university: "IIT Bombay", semester: 3, year: 2024, difficulty: "Medium" },
-  { title: "DSA - Quick Revision Sheet", subjectSlug: "data-structures-and-algorithms", dept: "computer-science", author: "Sneha R.", type: "Cheat Sheet", rating: 4.9, downloads: 2100, time: "5 hours ago", university: "IIT Madras", semester: 3, year: 2024, difficulty: "Easy" },
-  { title: "OS - Complete Notes", subjectSlug: "operating-systems", dept: "computer-science", author: "Vikram P.", type: "Notes", rating: 4.6, downloads: 540, time: "12 hours ago", university: "IIT Bombay", semester: 5, year: 2024, difficulty: "Hard" },
-  { title: "OS - PYQ 2024", subjectSlug: "operating-systems", dept: "computer-science", author: "Ananya M.", type: "PYQ", rating: 4.7, downloads: 670, time: "2 days ago", university: "BITS Pilani", semester: 5, year: 2024, difficulty: "Hard" },
-  { title: "OS - End Sem Solutions", subjectSlug: "operating-systems", dept: "computer-science", author: "Kavya L.", type: "Solutions", rating: 4.5, downloads: 420, time: "4 days ago", university: "VIT Vellore", semester: 5, year: 2023, difficulty: "Medium" },
-  { title: "DBMS - PYQ Collection 2024", subjectSlug: "database-management-systems", dept: "computer-science", author: "Kavya L.", type: "PYQ", rating: 4.7, downloads: 780, time: "2 days ago", university: "VIT Vellore", semester: 4, year: 2024, difficulty: "Medium" },
-  { title: "DBMS - Handwritten Notes", subjectSlug: "database-management-systems", dept: "computer-science", author: "Priya S.", type: "Notes", rating: 4.8, downloads: 920, time: "1 day ago", university: "IIT Delhi", semester: 4, year: 2024, difficulty: "Easy" },
-  { title: "CN - Formula Sheet", subjectSlug: "computer-networks", dept: "computer-science", author: "Arjun D.", type: "Cheat Sheet", rating: 4.9, downloads: 2100, time: "1 day ago", university: "IIT Madras", semester: 5, year: 2024, difficulty: "Easy" },
-  { title: "CN - Complete Notes", subjectSlug: "computer-networks", dept: "computer-science", author: "Rohan T.", type: "Notes", rating: 4.7, downloads: 680, time: "3 days ago", university: "IIT Kanpur", semester: 5, year: 2023, difficulty: "Medium" },
-  { title: "ML - Handwritten Notes", subjectSlug: "machine-learning", dept: "computer-science", author: "Ananya M.", type: "Notes", rating: 4.7, downloads: 670, time: "8 hours ago", university: "BITS Pilani", semester: 7, year: 2024, difficulty: "Hard" },
-  { title: "ML - PYQ 2024", subjectSlug: "machine-learning", dept: "computer-science", author: "Arjun D.", type: "PYQ", rating: 4.6, downloads: 480, time: "5 days ago", university: "Delhi University", semester: 7, year: 2024, difficulty: "Hard" },
-  { title: "Circuit Theory - Complete Notes", subjectSlug: "circuit-theory", dept: "electrical-engineering", author: "Rahul K.", type: "Notes", rating: 4.9, downloads: 890, time: "5 hours ago", university: "NIT Trichy", semester: 3, year: 2024, difficulty: "Medium" },
-  { title: "Circuit Theory - PYQ 2024", subjectSlug: "circuit-theory", dept: "electrical-engineering", author: "Arjun D.", type: "PYQ", rating: 4.5, downloads: 430, time: "1 day ago", university: "Delhi University", semester: 3, year: 2024, difficulty: "Hard" },
-  { title: "Power Systems - Solutions", subjectSlug: "power-systems", dept: "electrical-engineering", author: "Sneha R.", type: "Solutions", rating: 4.8, downloads: 760, time: "3 hours ago", university: "IIT Kanpur", semester: 6, year: 2024, difficulty: "Hard" },
-  { title: "Thermodynamics - Formula Sheet", subjectSlug: "thermodynamics", dept: "mechanical-engineering", author: "Sneha R.", type: "Cheat Sheet", rating: 4.9, downloads: 2100, time: "1 day ago", university: "IIT Madras", semester: 3, year: 2024, difficulty: "Medium" },
-  { title: "Fluid Mechanics - Complete Notes", subjectSlug: "fluid-mechanics", dept: "mechanical-engineering", author: "Rohan T.", type: "Notes", rating: 4.8, downloads: 950, time: "2 days ago", university: "IIT Kanpur", semester: 4, year: 2023, difficulty: "Hard" },
-  { title: "Digital Electronics - Notes", subjectSlug: "digital-electronics", dept: "electronics-and-comm.", author: "Ananya M.", type: "Notes", rating: 4.7, downloads: 670, time: "8 hours ago", university: "BITS Pilani", semester: 3, year: 2024, difficulty: "Easy" },
-  { title: "Signal Processing - PYQ 2024", subjectSlug: "signal-processing", dept: "electronics-and-comm.", author: "Vikram P.", type: "PYQ", rating: 4.5, downloads: 520, time: "4 days ago", university: "IIT Bombay", semester: 5, year: 2024, difficulty: "Hard" },
-  { title: "Structural Analysis - Problems", subjectSlug: "structural-analysis", dept: "civil-engineering", author: "Rohan T.", type: "PYQ", rating: 4.8, downloads: 950, time: "2 days ago", university: "IIT Kanpur", semester: 5, year: 2024, difficulty: "Hard" },
-  { title: "Chemical Process Design - Notes", subjectSlug: "chemical-process-design", dept: "chemical-engineering", author: "Meera J.", type: "Notes", rating: 4.6, downloads: 620, time: "3 days ago", university: "IIT Kharagpur", semester: 6, year: 2023, difficulty: "Medium" },
-  { title: "Web Technologies - Full Stack Notes", subjectSlug: "web-technologies", dept: "information-technology", author: "Kavya L.", type: "Notes", rating: 4.7, downloads: 780, time: "2 days ago", university: "VIT Vellore", semester: 5, year: 2024, difficulty: "Easy" },
-  { title: "Operations Research - Solutions", subjectSlug: "operations-research", dept: "industrial-engineering", author: "Arjun D.", type: "Solutions", rating: 4.5, downloads: 340, time: "5 days ago", university: "Delhi University", semester: 6, year: 2023, difficulty: "Medium" },
-];
+export interface ResourceItem {
+  title: string;
+  subjectSlug: string;
+  dept: string;
+  author: string;
+  type: string;
+  rating: number;
+  downloads: number;
+  time: string;
+  university: string;
+  semester: number;
+  year: number;
+  difficulty: "Easy" | "Medium" | "Hard" | string;
+}
+
 
 const typeColors: Record<string, string> = {
   Notes: "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground border-primary/20 dark:border-primary/30",
@@ -43,8 +33,7 @@ const typeColors: Record<string, string> = {
   "Cheat Sheet": "bg-secondary/10 text-secondary border-secondary/20",
 };
 
-
-const ResourceCard = ({ item, index }: { item: typeof allResources[0]; index: number }) => (
+const ResourceCard = ({ item, index }: { item: ResourceItem; index: number }) => (
   <Link
     to={`/resource/${item.subjectSlug}-${index}`}
     onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
@@ -90,29 +79,43 @@ const SubjectDetail = () => {
   const [sortBy, setSortBy] = useState("recent");
   const [loading, setLoading] = useState(true);
 
+  const [baseResources, setBaseResources] = useState<ResourceItem[]>([]);
+
+  const fetchResources = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get("http://localhost:3000/api/resources/getAllResources", {
+        params: {
+          department: deptName,
+          subject: subjectName
+        }
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mapped: ResourceItem[] = res.data.resources.map((r: any) => ({
+        title: r.title || "Untitled",
+        subjectSlug: subjectSlug || "",
+        dept: slug || "",
+        author: r.user?.fullname || "Unknown",
+        type: r.resourceType || "Notes",
+        rating: 4.5,
+        downloads: Math.floor(Math.random() * 500) + 100,
+        time: new Date(r.createdAt).toLocaleDateString(),
+        university: r.user?.university || "Unknown",
+        semester: 1,
+        year: new Date(r.createdAt).getFullYear(),
+        difficulty: "Medium"
+      }));
+      setBaseResources(mapped);
+    } catch (error) {
+      console.error("Error fetching resources:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [deptName, subjectName, subjectSlug, slug]);
+
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 200);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const existingResources = allResources.filter((r) => r.subjectSlug === subjectSlug);
-
-  const sampleAuthors = ["Priya S.", "Rahul K.", "Ananya M.", "Vikram P.", "Sneha R.", "Arjun D."];
-  const sampleUniversities = ["IIT Delhi", "NIT Trichy", "BITS Pilani", "IIT Bombay", "IIT Madras", "VIT Vellore"];
-  const difficulties = ["Easy", "Medium", "Hard", "Medium", "Easy", "Hard"];
-  const generateSampleResources = () => {
-    const shortName = subjectName.length > 20 ? subjectName.split(" ").map(w => w[0]).join("").toUpperCase() : subjectName;
-    return [
-      { title: `${shortName} - Complete Handwritten Notes`, subjectSlug: subjectSlug || "", dept: slug || "", author: sampleAuthors[0], type: "Notes" as const, rating: 4.8, downloads: 1240, time: "2 hours ago", university: sampleUniversities[0], semester: 3, year: 2024, difficulty: difficulties[0] },
-      { title: `${shortName} - PYQ Collection 2024`, subjectSlug: subjectSlug || "", dept: slug || "", author: sampleAuthors[1], type: "PYQ" as const, rating: 4.7, downloads: 890, time: "5 hours ago", university: sampleUniversities[1], semester: 3, year: 2024, difficulty: difficulties[1] },
-      { title: `${shortName} - Mid Sem Solutions`, subjectSlug: subjectSlug || "", dept: slug || "", author: sampleAuthors[3], type: "Solutions" as const, rating: 4.6, downloads: 540, time: "1 day ago", university: sampleUniversities[3], semester: 5, year: 2024, difficulty: difficulties[2] },
-      { title: `${shortName} - Quick Revision Sheet`, subjectSlug: subjectSlug || "", dept: slug || "", author: sampleAuthors[4], type: "Cheat Sheet" as const, rating: 4.9, downloads: 2100, time: "3 hours ago", university: sampleUniversities[4], semester: 5, year: 2023, difficulty: difficulties[3] },
-      { title: `${shortName} - End Sem Notes`, subjectSlug: subjectSlug || "", dept: slug || "", author: sampleAuthors[2], type: "Notes" as const, rating: 4.7, downloads: 670, time: "8 hours ago", university: sampleUniversities[2], semester: 3, year: 2023, difficulty: difficulties[4] },
-      { title: `${shortName} - PYQ 2023 Solved`, subjectSlug: subjectSlug || "", dept: slug || "", author: sampleAuthors[5], type: "PYQ" as const, rating: 4.5, downloads: 430, time: "2 days ago", university: sampleUniversities[5], semester: 5, year: 2023, difficulty: difficulties[5] },
-    ];
-  };
-
-  const baseResources = existingResources.length > 0 ? existingResources : generateSampleResources();
+    fetchResources();
+  }, [fetchResources]);
 
   const resources = baseResources
     .filter((r) => {

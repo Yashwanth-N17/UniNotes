@@ -10,6 +10,20 @@ import { FileText, Download, Star, Clock, Upload, Award, TrendingUp, BookOpen, E
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from "recharts";
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import { useUserResources } from "@/hooks/use-user-resources";
+import { formatDistanceToNow } from "date-fns";
+
+interface Resource {
+  id: string;
+  title: string;
+  subject: string;
+  resourceType: string;
+  description: string;
+  fileLink: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 
 const mockStats = {
@@ -85,10 +99,12 @@ const typeColors: Record<string, string> = {
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { data: userData, isLoading } = useUser();
+  const { data: userData, isLoading: isUserLoading } = useUser();
+  const { data: resources, isLoading: isResourcesLoading } = useUserResources();
 
   const user = {
     ...mockStats,
+    uploads: resources?.length || 0,
     name: userData?.fullname || "Loading...",
     university: userData?.university || "...",
     branch: userData?.department || "...",
@@ -181,24 +197,37 @@ const Profile = () => {
             {/* Uploads Tab */}
             <TabsContent value="uploads">
               <div className="space-y-2 sm:space-y-3">
-                {uploadHistory.map((item, i) => (
-                  <div key={i} className="rounded-xl border border-border bg-card p-3 sm:p-4 transition-all hover:shadow-card cursor-pointer">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-                        <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-display font-semibold text-foreground text-xs sm:text-sm truncate">{item.title}</h4>
-                        <div className="mt-1 flex items-center gap-2 text-[10px] sm:text-xs text-muted-foreground flex-wrap">
-                          <Badge variant="outline" className={`text-[10px] sm:text-xs ${typeColors[item.type] || ""}`}>{item.type}</Badge>
-                          <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{item.date}</span>
-                          <span className="flex items-center gap-1"><Download className="h-3 w-3" />{item.downloads}</span>
-                          <span className="flex items-center gap-1 text-secondary"><Star className="h-3 w-3 fill-secondary" />{item.rating}</span>
+                {isResourcesLoading ? (
+                  <div className="flex items-center justify-center p-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : resources && resources.length > 0 ? (
+                  resources.map((item: Resource, i: number) => (
+                    <div key={item.id} className="rounded-xl border border-border bg-card p-3 sm:p-4 transition-all hover:shadow-card cursor-pointer" onClick={() => window.open(item.fileLink, "_blank")}>
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+                          <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-display font-semibold text-foreground text-xs sm:text-sm truncate">{item.title}</h4>
+                          <div className="mt-1 flex items-center gap-2 text-[10px] sm:text-xs text-muted-foreground flex-wrap">
+                            <Badge variant="outline" className={`text-[10px] sm:text-xs ${typeColors[item.resourceType] || ""}`}>{item.resourceType}</Badge>
+                            <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}</span>
+                            <span className="flex items-center gap-1"><Download className="h-3 w-3" /> 0 </span>
+                            <span className="flex items-center gap-1 text-secondary"><Star className="h-3 w-3 fill-secondary" /> 0 </span>
+                          </div>
                         </div>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center p-12 text-center rounded-xl border border-dashed border-border bg-card/50">
+                    <Upload className="h-10 w-10 text-muted-foreground mb-4 opacity-50" />
+                    <h3 className="text-lg font-semibold">No uploads yet</h3>
+                    <p className="text-sm text-muted-foreground mt-1 max-w-xs">You haven't uploaded any study materials yet. Start sharing to help others!</p>
+                    <Button variant="outline" className="mt-6" onClick={() => navigate("/upload")}>Upload Now</Button>
                   </div>
-                ))}
+                )}
               </div>
             </TabsContent>
 

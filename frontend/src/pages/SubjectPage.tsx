@@ -6,6 +6,7 @@ import { FileText, BookOpen, Users, TrendingUp, ArrowLeft, ChevronRight } from "
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
+import axios from "axios";
 
 type SubjectInfo = { name: string; resources: number; popular: string; semester: number };
 
@@ -145,11 +146,43 @@ const SubjectPage = () => {
   const displayName = department.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
   const [selectedSemester, setSelectedSemester] = useState("All");
   const [loading, setLoading] = useState(true);
+  const [resourceCounts, setResourceCounts] = useState<Record<string, number>>({});
+  const [totalResources, setTotalResources] = useState(0);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 200);
-    return () => clearTimeout(timer);
-  }, []);
+    const fetchCounts = async () => {
+      if (!displayName) return;
+      try {
+        setLoading(true);
+        const res = await axios.get("http://localhost:3000/api/resources/getAllResources", {
+          params: { department: displayName }
+        });
+        
+        const counts: Record<string, number> = {};
+        const resources = res.data.resources || [];
+        
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        resources.forEach((r: any) => {
+          const subj = r.subject;
+          if (subj) {
+            // Try to match the exact name, or case-insensitive
+            const matchingSubject = data?.subjects.find(s => s.name.toLowerCase() === subj.toLowerCase());
+            const keyName = matchingSubject ? matchingSubject.name : subj;
+            counts[keyName] = (counts[keyName] || 0) + 1;
+          }
+        });
+        
+        setResourceCounts(counts);
+        setTotalResources(resources.length);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCounts();
+  }, [displayName, data]);
   if (!data) {
     return (
       <div className="min-h-screen bg-background">
@@ -194,7 +227,7 @@ const SubjectPage = () => {
           <div className="mt-6 flex flex-wrap gap-6">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <BookOpen className="h-4 w-4 text-secondary" />
-              <span><strong className="text-foreground">{data.resources.toLocaleString()}</strong> resources</span>
+              <span><strong className="text-foreground">{(totalResources > 0 ? totalResources : data.resources).toLocaleString()}</strong> resources</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Users className="h-4 w-4 text-secondary" />
@@ -257,7 +290,7 @@ const SubjectPage = () => {
                       </div>
                       <div>
                         <h3 className="font-display font-semibold text-foreground leading-snug group-hover:text-secondary transition-colors">{sub.name}</h3>
-                        <p className="mt-1 text-xs text-muted-foreground">{sub.resources} resources</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{totalResources > 0 ? (resourceCounts[sub.name] || 0) : sub.resources} resources</p>
                         <div className="mt-1 flex items-center gap-2">
                           <Badge variant="outline" className="text-xs bg-secondary/10 text-secondary border-secondary/20 whitespace-nowrap">Sem {sub.semester}</Badge>
                           <span className="text-xs text-muted-foreground">Popular: {sub.popular}</span>

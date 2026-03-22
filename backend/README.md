@@ -15,10 +15,11 @@ This is the backend service for the **UniNotes** application—a comprehensive p
 - **Framework:** Express.js 5.x
 - **Database:** PostgreSQL
 - **ORM:** Prisma
+- **Storage:** Cloudinary (for academic resources)
 - **Security:**
   - JWT (JSON Web Tokens) for stateless authentication
   - HttpOnly & Secure Cookies for session management
-  - PBKDF2 for password hashing
+  - **bcryptjs** for secure password and token hashing
   - CORS-enabled with credential support
 
 ---
@@ -89,7 +90,7 @@ npm start
 
 All routes are prefixed with `/api`.
 
-### 🔐 Authentication (`/api/auth`)
+### 🔐 Auth & Profile (`/api/auth`)
 
 #### 1. Register a New User
 - **Endpoint:** `POST /register`
@@ -148,9 +149,27 @@ All routes are prefixed with `/api`.
 - **Description:** Issues a new access token and rotates the refresh token.
 
 #### 6. Logout
-- **Endpoint:** `POST /logout`
-- **Auth Required:** No (Uses `refreshToken` Cookie)
 - **Description:** Invalidates the current session and clears the refresh token cookie.
+
+### 📚 Resources (`/api/resources`)
+
+#### 1. Upload a Resource
+- **Endpoint:** `POST /upload`
+- **Auth Required:** **Yes** (Bearer Token)
+- **Content-Type:** `multipart/form-data`
+- **Request Body (FormData):**
+  - `file`: The file to upload (Max 10MB)
+  - `title`: String
+  - `subject`: String
+  - `resourceType`: String (e.g., "Notes", "PYQ")
+  - `description`: String
+- **Description:** Uploads a file to Cloudinary and creates a resource entry in the database pinned to the user.
+
+#### 2. Get My Resources
+- **Endpoint:** `GET /getUserResources`
+- **Auth Required:** **Yes** (Bearer Token)
+- **Description:** Fetches all resources uploaded by the authenticated user.
+
 
 ---
 
@@ -179,12 +198,25 @@ All routes are prefixed with `/api`.
 | `userAgent` | String | User agent string |
 | `revoke` | Boolean | Whether the session is revoked |
 
+### `Resources`
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `id` | UUID | Primary Key |
+| `title` | String | Resource title |
+| `subject` | String | Academic subject |
+| `resourceType` | String | Type (Notes, PYQ, etc.) |
+| `description` | String | Detailed description |
+| `fileLink` | String | URL to the hosted file (Cloudinary) |
+| `userId` | UUID | Foreign Key (Owner) |
+| `createdAt` | DateTime | Timestamp of upload |
+
+
 ---
 
 ## 🛡️ Security
 - **JWT Authentication:** Access tokens passed in `Authorization` header.
 - **Refresh Token Rotation:** Refresh tokens stored in `HttpOnly` cookies.
-- **Password Hashing:** PBKDF2 for secure credentials.
+- **Password & Token Hashing:** **bcryptjs** with adaptive salting.
 - **CORS:** Configured for credential support and trusted origins.
 
 ---
