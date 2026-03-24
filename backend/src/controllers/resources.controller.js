@@ -25,7 +25,7 @@ export async function handleGetUserResources(req, res){
         res.status(400).json({ message: error.message });
     }
 }
-
+ 
 export async function handleGetAllResources(req, res){
     try {
         const filters = {
@@ -33,6 +33,28 @@ export async function handleGetAllResources(req, res){
             department: req.query.department
         };
         const resources = await resourcesService.getAllResources(filters);
+        res.status(200).json({
+            message: "Resources fetched successfully",
+            resources
+        });
+    }
+    catch(error){
+        res.status(400).json({ message: error.message });
+    }
+}
+                
+export async function handleGetDepartmentResources(req, res){
+    try {
+        const department = req.body?.department;
+
+        if (!department) {
+            return res.status(400).json({ message: "Department query parameter is required" });
+        }
+
+        const filters = {
+            department: department
+        };
+        const resources = await resourcesService.getDepartmentResources(filters);
         res.status(200).json({
             message: "Resources fetched successfully",
             resources

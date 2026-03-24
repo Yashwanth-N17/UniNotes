@@ -101,3 +101,34 @@ export async function getAllResources(filters = {}) {
     throw error;
   }
 }
+
+export async function getDepartmentResources(filters = {}) {
+  try {
+    const whereClause = {};
+
+    if (filters.department) {
+      whereClause.department = {
+        equals: filters.department,
+        mode: "insensitive",
+      };
+    }
+    const resources = await prisma.resources.findMany({
+      where: whereClause,
+      include: {
+        user: {
+          select: {
+            fullname: true,
+            university: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+    return resources;
+  } catch (error) {
+    console.log("Error in getDepartmentResources Service", error);
+    throw error;
+  }
+}

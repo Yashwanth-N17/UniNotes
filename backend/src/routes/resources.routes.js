@@ -8,5 +8,5 @@ const resourcesRouter = Router();
 resourcesRouter.post("/upload", authenticate, upload.single("file"), resourcesController.handleUploadResource);
 resourcesRouter.get("/getUserResources", authenticate, resourcesController.handleGetUserResources);
 resourcesRouter.get("/getAllResources", resourcesController.handleGetAllResources);
-
+resourcesRouter.get("/getDepartmentResources", resourcesController.handleGetDepartmentResources);
 export default resourcesRouter;
