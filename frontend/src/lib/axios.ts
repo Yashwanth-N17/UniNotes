@@ -23,12 +23,12 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     // If the error is 401 and it's not the refresh-token request itself
-    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes("/api/auth/refresh-token")) {
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes("/api/auth/refresh")) {
       originalRequest._retry = true;
 
       try {
         // Attempt to get a new access token using the refresh token (which is in a cookie)
-        const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/refresh-token`, {
+        const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/refresh`, {
           withCredentials: true,
         });
 

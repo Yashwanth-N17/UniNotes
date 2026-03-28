@@ -95,91 +95,54 @@ All routes are prefixed with `/api`.
 #### 1. Register a New User
 - **Endpoint:** `POST /register`
 - **Auth Required:** No
-- **Request Body:**
-```json
-{
-  "fullname": "John Doe",
-  "username": "johndoe123",
-  "email": "john@example.com",
-  "password": "securepassword",
-  "university": "ABC University",
-  "department": "Computer Science",
-  "year": 2
-}
-```
 - **Description:** Creates a new user account, starts a session, and returns an access token.
 
 #### 2. Login
 - **Endpoint:** `POST /login`
 - **Auth Required:** No
-- **Request Body:**
-```json
-{
-  "email": "john@example.com",
-  "password": "securepassword"
-}
-```
 - **Description:** Authenticates user and returns an access token. Sets a `refreshToken` cookie.
 
 #### 3. Get Current User Profile
-- **Endpoint:** `GET /get-me`
+- **Endpoint:** `GET /me`
 - **Auth Required:** **Yes** (Bearer Token)
 - **Description:** Returns the profile information of the authenticated user.
 
 #### 4. Update Profile
-- **Endpoint:** `PUT /update-profile`
+- **Endpoint:** `PUT /me`
 - **Auth Required:** **Yes** (Bearer Token)
-- **Request Body:**
-```json
-{
-  "fullname": "John Updated",
-  "username": "john_new",
-  "email": "john_new@example.com",
-  "bio": "Passionate student and developer.",
-  "university": "New University",
-  "department": "Software Engineering",
-  "year": 3
-}
-```
 - **Description:** Updates the profile information for the current user. All fields are optional.
 
 #### 5. Refresh Access Token
-- **Endpoint:** `GET /refresh-token`
+- **Endpoint:** `GET /refresh`
 - **Auth Required:** No (Uses `refreshToken` Cookie)
 - **Description:** Issues a new access token and rotates the refresh token.
 
 #### 6. Logout
+- **Endpoint:** `POST /logout`
 - **Description:** Invalidates the current session and clears the refresh token cookie.
 
 ### 📚 Resources (`/api/resources`)
 
 #### 1. Upload a Resource
-- **Endpoint:** `POST /upload`
+- **Endpoint:** `POST /`
 - **Auth Required:** **Yes** (Bearer Token)
 - **Content-Type:** `multipart/form-data`
-- **Request Body (FormData):**
-  - `file`: The file to upload (Max 10MB)
-  - `title`: String
-  - `subject`: String
-  - `resourceType`: String (e.g., "Notes", "PYQ")
-  - `department`: String
-  - `semester`: Int
-  - `description`: String
 - **Description:** Uploads a file to Cloudinary and creates a resource entry in the database pinned to the user.
 
 #### 2. Get My Resources
-- **Endpoint:** `GET /getUserResources`
+- **Endpoint:** `GET /me`
 - **Auth Required:** **Yes** (Bearer Token)
 - **Description:** Fetches all resources uploaded by the authenticated user.
 
 #### 3. Get All Resources (with Filtering)
-- **Endpoint:** `GET /getAllResources`
+- **Endpoint:** `GET /`
 - **Auth Required:** No
 - **Query Parameters:**
   - `department`: String (e.g., "Computer Science")
   - `subject`: String (e.g., "Data Structures")
   - `semester`: Int (e.g., 3)
-- **Description:** Fetches all resources with optional server-side filtering and includes uploader details.
+  - `type`: String (e.g., "Notes")
+- **Description:** Fetches all resources with optional server-side filtering. Returns unified format `{ success: true, count: number, data: [...] }`.
 
 
 ---

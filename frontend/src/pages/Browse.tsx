@@ -15,7 +15,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "@/hooks/use-user";
 import { useToast } from "@/hooks/use-toast";
 import { useDebounce } from "@/hooks/use-debounce";
-import axios from "axios";
+import api from "@/lib/axios";
 
 export interface ResourceItem {
   title: string;
@@ -27,6 +27,7 @@ export interface ResourceItem {
   time: string;
   university: string;
   semester: number;
+  department: string;
 }
 
 const departments = [
@@ -87,9 +88,11 @@ const Browse = () => {
   const fetchResources = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await axios.get("http://localhost:3000/api/resources/getAllResources");
+      const res = await api.get("/api/resources/");
+
+      const resourcesData = res.data.data || res.data.resources || [];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mapped: ResourceItem[] = res.data.resources.map((r: any) => ({
+      const mapped: ResourceItem[] = resourcesData.map((r: any) => ({
         title: r.title || "Untitled",
         subject: r.subject || "General",
         author: r.user?.fullname || "Unknown",
@@ -98,7 +101,8 @@ const Browse = () => {
         downloads: Math.floor(Math.random() * 500) + 100,
         time: new Date(r.createdAt).toLocaleDateString(),
         university: r.user?.university || "Unknown",
-        semester: 1
+        semester: r.semester || 1,
+        department: r.department || "General"
       }));
       setAllResources(mapped);
     } catch (error) {
@@ -156,7 +160,7 @@ const Browse = () => {
       const q = debouncedSearch.toLowerCase();
       const matchesSearch = !q || r.title.toLowerCase().includes(q) || r.subject.toLowerCase().includes(q) || r.author.toLowerCase().includes(q) || r.university.toLowerCase().includes(q);
       const matchesType = typeFilter === "all" || r.type.toLowerCase() === typeFilter.toLowerCase();
-      const matchesDept = departmentFilter === "all" || r.subject.toLowerCase() === departmentFilter.toLowerCase();
+      const matchesDept = departmentFilter === "all" || r.department.toLowerCase() === departmentFilter.toLowerCase();
       const matchesSem = semesterFilter === "all" || r.semester === parseInt(semesterFilter);
       return matchesSearch && matchesType && matchesDept && matchesSem;
     })

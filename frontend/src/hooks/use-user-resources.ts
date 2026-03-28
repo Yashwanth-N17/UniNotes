@@ -5,9 +5,10 @@ export const useUserResources = () => {
   return useQuery({
     queryKey: ["userResources"],
     queryFn: async () => {
-      const { data } = await api.get("/api/resources/getUserResources");
+      const { data } = await api.get("/api/resources/me");
       return data.resources;
     },
+
     staleTime: 1000 * 60 * 5, // 5 minutes
     enabled: !!localStorage.getItem("accessToken"),
   });

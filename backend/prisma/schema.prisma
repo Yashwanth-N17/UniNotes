@@ -75,3 +75,5 @@ model resources {
   @@index([department, semester])
 }
 
+
+

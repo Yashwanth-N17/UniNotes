@@ -8,7 +8,7 @@ import { FileText, Download, Star, Clock, ArrowLeft, BookOpen, SlidersHorizontal
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect, useCallback } from "react";
-import axios from "axios";
+import api from "@/lib/axios";
 
 export interface ResourceItem {
   title: string;
@@ -37,7 +37,7 @@ const ResourceCard = ({ item, index }: { item: ResourceItem; index: number }) =>
   <Link
     to={`/resource/${item.subjectSlug}-${index}`}
     onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-    className="group rounded-xl border border-border bg-card p-5 shadow-card transition-all duration-300 hover:shadow-card-hover hover:-translate-y-1 block h-full flex flex-col"
+    className="group rounded-xl border border-border bg-card p-5 shadow-card transition-all duration-300 hover:shadow-card-hover hover:-translate-y-1 h-full flex flex-col"
   >
     <div className="mb-3 flex items-start justify-between">
       <div className="flex items-center gap-1.5 flex-wrap">
@@ -84,14 +84,15 @@ const SubjectDetail = () => {
   const fetchResources = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await axios.get("http://localhost:3000/api/resources/getAllResources", {
+      const res = await api.get("/api/resources/", {
         params: {
           department: deptName,
           subject: subjectName
         }
       });
+      const resourcesData = res.data.data || res.data.resources || [];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mapped: ResourceItem[] = res.data.resources.map((r: any) => ({
+      const mapped: ResourceItem[] = resourcesData.map((r: any) => ({
         title: r.title || "Untitled",
         subjectSlug: subjectSlug || "",
         dept: slug || "",

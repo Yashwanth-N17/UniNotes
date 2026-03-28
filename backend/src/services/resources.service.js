@@ -61,15 +61,16 @@ export async function getUserResources(req) {
   }
 }
 
-export async function getAllResources(filters = {}) {
+export async function getResources(filters = {}) {
   try {
-
     const whereClause = {};
 
     if (filters.subject) {
-      whereClause.subject = { equals: filters.subject, mode: "insensitive" };
+      whereClause.subject = {
+        equals: filters.subject,
+        mode: "insensitive",
+      };
     }
-
 
     if (filters.department) {
       whereClause.department = {
@@ -81,37 +82,14 @@ export async function getAllResources(filters = {}) {
     if (filters.semester) {
       whereClause.semester = parseInt(filters.semester);
     }
-    const resources = await prisma.resources.findMany({
-      where: whereClause,
-      include: {
-        user: {
-          select: {
-            fullname: true,
-            university: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
-    return resources;
-  } catch (error) {
-    console.log("Error in getAllResources Service", error);
-    throw error;
-  }
-}
 
-export async function getDepartmentResources(filters = {}) {
-  try {
-    const whereClause = {};
-
-    if (filters.department) {
-      whereClause.department = {
-        equals: filters.department,
+    if (filters.type) {
+      whereClause.resourceType = {
+        equals: filters.type,
         mode: "insensitive",
       };
     }
+
     const resources = await prisma.resources.findMany({
       where: whereClause,
       include: {
@@ -126,9 +104,11 @@ export async function getDepartmentResources(filters = {}) {
         createdAt: "desc",
       },
     });
+
     return resources;
+
   } catch (error) {
-    console.log("Error in getDepartmentResources Service", error);
+    console.log("Error in getResources Service", error);
     throw error;
   }
 }

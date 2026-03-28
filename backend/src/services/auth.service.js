@@ -6,20 +6,11 @@ import {
   verifyToken,
 } from "../utils/token.js";
 
-export async function registerUser(data, req) {
-  const { fullname, username, email, password, university, department, year } =
-    data;
+export async function registerUser(data, { ip, headers }) {
+  const { fullname, username, email, password, university, department, year } = data;
 
-  if (
-    !fullname ||
-    !username ||
-    !email ||
-    !password ||
-    !university ||
-    !department ||
-    !year
-  ) {
-    throw new Error("All fields are required");
+  if (!fullname || !username || !email || !password || !university || !department || !year) {
+    throw new Error("Missing required registration fields");
   }
 
   const existingUser = await prisma.user.findFirst({
@@ -29,7 +20,7 @@ export async function registerUser(data, req) {
   });
 
   if (existingUser) {
-    throw new Error("User already registered");
+    throw new Error("Email or username is already taken");
   }
 
   const hashedPassword = await hashPassword(password);
@@ -53,8 +44,8 @@ export async function registerUser(data, req) {
     data: {
       userId: user.id,
       refreshTokenHash,
-      ip: req.ip,
-      userAgent: req.headers["user-agent"],
+      ip,
+      userAgent: headers["user-agent"],
       revoke: false,
     },
   });
@@ -67,18 +58,22 @@ export async function registerUser(data, req) {
   return { user, accessToken, refreshToken };
 }
 
-export async function loginUser(email, password, req) {
+export async function loginUser(email, password, { ip, headers }) {
+  if (!email || !password) {
+    throw new Error("Email and password are required");
+  }
+
   const user = await prisma.user.findUnique({
     where: { email },
   });
 
   if (!user) {
-    throw new Error("User not found");
+    throw new Error("Invalid credentials");
   }
 
   const isPasswordValid = await comparePassword(password, user.password);
   if (!isPasswordValid) {
-    throw new Error("Invalid password");
+    throw new Error("Invalid credentials");
   }
 
   const refreshToken = generateRefreshToken({ id: user.id });
@@ -88,8 +83,8 @@ export async function loginUser(email, password, req) {
     data: {
       userId: user.id,
       refreshTokenHash,
-      ip: req.ip,
-      userAgent: req.headers["user-agent"],
+      ip,
+      userAgent: headers["user-agent"],
       revoke: false,
     },
   });
@@ -104,7 +99,7 @@ export async function loginUser(email, password, req) {
 
 export async function refreshUserToken(refreshToken) {
   if (!refreshToken) {
-    throw new Error("Refresh token not found");
+    throw new Error("Session expired or invalid refresh token");
   }
 
   const decoded = verifyToken(refreshToken);
@@ -125,7 +120,7 @@ export async function refreshUserToken(refreshToken) {
   }
 
   if (!session) {
-    throw new Error("Invalid refresh token");
+    throw new Error("Invalid session");
   }
 
   const user = await prisma.user.findUnique({
@@ -133,7 +128,7 @@ export async function refreshUserToken(refreshToken) {
   });
 
   if (!user) {
-    throw new Error("User not found");
+    throw new Error("User record not found");
   }
 
   const accessToken = generateAccessToken({
@@ -154,14 +149,14 @@ export async function refreshUserToken(refreshToken) {
 
 export async function logoutUser(refreshToken) {
   if (!refreshToken) {
-    throw new Error("Refresh token not found");
+    throw new Error("Already logged out or session not found");
   }
 
   let decoded;
   try {
     decoded = verifyToken(refreshToken);
   } catch (error) {
-    throw new Error("Invalid refresh token session");
+    throw new Error("Session invalid");
   }
 
   const sessions = await prisma.session.findMany({
@@ -180,7 +175,7 @@ export async function logoutUser(refreshToken) {
   }
 
   if (!session) {
-    throw new Error("Invalid refresh token");
+    throw new Error("Session not found");
   }
 
   await prisma.session.update({
@@ -194,10 +189,20 @@ export async function logoutUser(refreshToken) {
 export async function getUserProfile(userId) {
   const user = await prisma.user.findFirst({
     where: { id: userId },
+    select: {
+        id: true,
+        fullname: true,
+        username: true,
+        email: true,
+        bio: true,
+        university: true,
+        department: true,
+        year: true
+    }
   });
 
   if (!user) {
-    throw new Error("User not found");
+    throw new Error("User profile not found");
   }
 
   return user;
@@ -212,20 +217,32 @@ export async function updateUserProfile(userId, data) {
     throw new Error("User not found");
   }
 
+  const updateData = {};
+  const allowedFields = ['fullname', 'username', 'email', 'bio', 'university', 'department', 'year'];
+  
+  allowedFields.forEach(field => {
+      if (data[field] !== undefined) {
+          updateData[field] = data[field];
+      }
+  });
+
   const updatedUser = await prisma.user.update({
     where: { id: userId },
-    data: {
-      fullname: data.fullname,
-      username: data.username,
-      email: data.email,
-      bio: data.bio,
-      university: data.university,
-      department: data.department,
-      year: data.year,
-    },
+    data: updateData,
+    select: {
+        id: true,
+        fullname: true,
+        username: true,
+        email: true,
+        bio: true,
+        university: true,
+        department: true,
+        year: true
+    }
   });
 
   return updatedUser;
 }
+
 
 

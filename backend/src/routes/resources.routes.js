@@ -5,8 +5,12 @@ import { upload } from "../utils/multer.js";
 
 const resourcesRouter = Router();
 
-resourcesRouter.post("/upload", authenticate, upload.single("file"), resourcesController.handleUploadResource);
-resourcesRouter.get("/getUserResources", authenticate, resourcesController.handleGetUserResources);
-resourcesRouter.get("/getAllResources", resourcesController.handleGetAllResources);
-resourcesRouter.get("/getDepartmentResources", resourcesController.handleGetDepartmentResources);
+resourcesRouter.get("/", resourcesController.handleGetResources);
+
+resourcesRouter.use(authenticate);
+
+resourcesRouter.post("/", upload.single("file"), resourcesController.handleUploadResource);
+resourcesRouter.get("/me", resourcesController.handleGetUserResources);
+
+
 export default resourcesRouter;

@@ -150,9 +150,10 @@ const UploadPage = () => {
       formData.append("file", files[0]);
 
       const response = await api.post(
-        "/api/resources/upload",
+        "/api/resources/",
         formData
       );
+
 
       const data = response.data;
     

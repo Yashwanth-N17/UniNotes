@@ -116,7 +116,7 @@ const EditProfile = () => {
         year: yearInt,
       };
 
-      await api.put("/api/auth/update-profile", payload);
+      await api.put("/api/auth/me", payload);
 
       // Invalidate the query so it refetches next time or manually update
       queryClient.invalidateQueries({ queryKey: ["user"] });
