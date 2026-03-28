@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useUser } from "@/hooks/use-user";
 import { useToast } from "@/hooks/use-toast";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -69,7 +69,8 @@ const cardVariants = {
 const ITEMS_PER_PAGE = 6;
 
 const Browse = () => {
-  const [search, setSearch] = useState("");
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("q") || "");
   const debouncedSearch = useDebounce(search, 300);
   const [typeFilter, setTypeFilter] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
@@ -88,7 +89,14 @@ const Browse = () => {
   const fetchResources = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await api.get("/api/resources/");
+      const res = await api.get("/api/resources/", {
+        params: {
+          search: debouncedSearch || undefined,
+          department: departmentFilter !== "all" ? departmentFilter : undefined,
+          type: typeFilter !== "all" ? typeFilter : undefined,
+          semester: semesterFilter !== "all" ? semesterFilter : undefined,
+        }
+      });
 
       const resourcesData = res.data.data || res.data.resources || [];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -111,7 +119,7 @@ const Browse = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [debouncedSearch, typeFilter, departmentFilter, semesterFilter, toast]);
 
   useEffect(() => {
     fetchResources();
@@ -155,16 +163,7 @@ const Browse = () => {
     await fetchResources();
   };
 
-  const filtered = allResources
-    .filter((r) => {
-      const q = debouncedSearch.toLowerCase();
-      const matchesSearch = !q || r.title.toLowerCase().includes(q) || r.subject.toLowerCase().includes(q) || r.author.toLowerCase().includes(q) || r.university.toLowerCase().includes(q);
-      const matchesType = typeFilter === "all" || r.type.toLowerCase() === typeFilter.toLowerCase();
-      const matchesDept = departmentFilter === "all" || r.department.toLowerCase() === departmentFilter.toLowerCase();
-      const matchesSem = semesterFilter === "all" || r.semester === parseInt(semesterFilter);
-      return matchesSearch && matchesType && matchesDept && matchesSem;
-    })
-    .sort((a, b) => {
+  const filtered = allResources.sort((a, b) => {
       if (sortBy === "downloads") return b.downloads - a.downloads;
       if (sortBy === "rating") return b.rating - a.rating;
       return 0;
@@ -195,7 +194,15 @@ const Browse = () => {
     return () => observer.disconnect();
   }, [loadMore]);
 
-  if (loading) {
+  const [initialMount, setInitialMount] = useState(true);
+
+  useEffect(() => {
+    if (!loading && initialMount) {
+      setInitialMount(false);
+    }
+  }, [loading, initialMount]);
+
+  if (initialMount) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -364,7 +371,9 @@ const Browse = () => {
             </p>
           </div>
 
-          {filtered.length > 0 ? (
+          {loading ? (
+            <ResourceGridSkeleton />
+          ) : filtered.length > 0 ? (
             <>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <AnimatePresence mode="popLayout">

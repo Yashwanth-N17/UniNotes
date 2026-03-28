@@ -72,18 +72,25 @@ export async function getResources(filters = {}) {
       };
     }
 
-    if (filters.department) {
+    if (filters.search) {
+      whereClause.OR = [
+        { title: { contains: filters.search, mode: "insensitive" } },
+        { subject: { contains: filters.search, mode: "insensitive" } },
+      ];
+    }
+
+    if (filters.department && filters.department !== "all") {
       whereClause.department = {
         equals: filters.department,
         mode: "insensitive",
       };
     }
 
-    if (filters.semester) {
+    if (filters.semester && filters.semester !== "all") {
       whereClause.semester = parseInt(filters.semester);
     }
 
-    if (filters.type) {
+    if (filters.type && filters.type !== "all") {
       whereClause.resourceType = {
         equals: filters.type,
         mode: "insensitive",

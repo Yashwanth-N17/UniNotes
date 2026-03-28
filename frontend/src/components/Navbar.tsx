@@ -13,20 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "@/hooks/use-user";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-const allResources = [
-  { title: "Data Structures & Algorithms - Complete Notes", subject: "Computer Science", type: "Notes", rating: 4.8, id: 0 },
-  { title: "Engineering Mathematics III - PYQ 2024", subject: "Mechanical Engineering", type: "PYQ", rating: 4.9, id: 1 },
-  { title: "Digital Electronics - Handwritten Notes", subject: "Electronics & Comm.", type: "Notes", rating: 4.7, id: 2 },
-  { title: "Operating Systems - Mid Sem Solutions", subject: "Computer Science", type: "Solutions", rating: 4.6, id: 3 },
-  { title: "Thermodynamics - Formula Sheet", subject: "Mechanical Engineering", type: "Cheat Sheet", rating: 4.9, id: 4 },
-  { title: "Power Systems - Chapter Summaries", subject: "Electrical Engineering", type: "Notes", rating: 4.5, id: 5 },
-  { title: "Database Management Systems - Lab Manual", subject: "Information Technology", type: "Notes", rating: 4.7, id: 6 },
-  { title: "Structural Analysis - Practice Problems", subject: "Civil Engineering", type: "PYQ", rating: 4.8, id: 7 },
-  { title: "Chemical Process Design - Notes", subject: "Chemical Engineering", type: "Notes", rating: 4.6, id: 8 },
-  { title: "Machine Learning - Complete Guide", subject: "Computer Science", type: "Notes", rating: 4.9, id: 9 },
-  { title: "Fluid Mechanics - Solved Examples", subject: "Civil Engineering", type: "Solutions", rating: 4.5, id: 10 },
-  { title: "VLSI Design - Lab Experiments", subject: "Electronics & Comm.", type: "Notes", rating: 4.7, id: 11 },
-];
+import { useDebounce } from "@/hooks/use-debounce";
 
 const baseMobileNavItems = [
   { icon: Home, label: "Home", path: "/" },
@@ -40,6 +27,10 @@ const Navbar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 300);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -74,13 +65,27 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const results = query.trim().length >= 2
-    ? allResources.filter(r =>
-        r.title.toLowerCase().includes(query.toLowerCase()) ||
-        r.subject.toLowerCase().includes(query.toLowerCase()) ||
-        r.type.toLowerCase().includes(query.toLowerCase())
-      ).slice(0, 5)
-    : [];
+  useEffect(() => {
+    if (debouncedQuery.trim().length >= 2) {
+      const fetchResults = async () => {
+        setSearchLoading(true);
+        try {
+          const res = await api.get("/api/resources/", {
+            params: { search: debouncedQuery }
+          });
+          const data = res.data.data || res.data.resources || [];
+          setSearchResults(data.slice(0, 5));
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setSearchLoading(false);
+        }
+      };
+      fetchResults();
+    } else {
+      setSearchResults([]);
+    }
+  }, [debouncedQuery]);
 
   const openSearch = useCallback(() => {
     setSearchOpen(true);
@@ -119,6 +124,7 @@ const Navbar = () => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
+        if (location.pathname === "/browse") return;
         if (searchOpen) {
           closeSearch();
         } else {
@@ -128,7 +134,7 @@ const Navbar = () => {
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [searchOpen, openSearch, closeSearch]);
+  }, [searchOpen, openSearch, closeSearch, location.pathname]);
 
   useEffect(() => {
     if (!searchOpen) return;
@@ -157,83 +163,89 @@ const Navbar = () => {
         </Link>
 
         {/* Search Bar - Desktop */}
-        <div className="hidden md:flex flex-1 max-w-md mx-4 relative" ref={dropdownRef}>
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              ref={inputRef}
-              placeholder="Search resources... (⌘K)"
-              value={query}
-              onChange={(e) => { setQuery(e.target.value); if (!searchOpen) setSearchOpen(true); }}
-              onFocus={() => setSearchOpen(true)}
-              onKeyDown={handleKeyDown}
-              className="h-9 pl-9 pr-8 text-sm rounded-xl bg-muted/50 border-border focus:bg-card transition-colors"
-              aria-label="Search resources"
-            />
-            {query && (
-              <button onClick={() => setQuery("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
+        {location.pathname !== "/browse" ? (
+          <div className="hidden md:flex flex-1 max-w-md mx-4 relative" ref={dropdownRef}>
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                ref={inputRef}
+                placeholder="Search resources... (⌘K)"
+                value={query}
+                onChange={(e) => { setQuery(e.target.value); if (!searchOpen) setSearchOpen(true); }}
+                onFocus={() => setSearchOpen(true)}
+                onKeyDown={handleKeyDown}
+                className="h-9 pl-9 pr-8 text-sm rounded-xl bg-muted/50 border-border focus:bg-card transition-colors"
+                aria-label="Search resources"
+              />
+              {query && (
+                <button onClick={() => setQuery("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
 
-          <AnimatePresence>
-            {searchOpen && query.trim().length >= 2 && (
-              <motion.div
-                initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-                className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-border bg-card shadow-elevated overflow-hidden z-50"
-              >
-                {results.length > 0 ? (
-                  <>
-                    <div className="p-1.5">
-                      {results.map((r, idx) => (
-                        <motion.button
-                          key={r.id}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: idx * 0.03 }}
-                          onClick={() => handleSelect(r.id)}
-                          className="flex items-center gap-3 w-full rounded-lg px-3 py-2.5 text-left hover:bg-muted/60 transition-colors"
-                        >
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-                            <FileText className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate">{r.title}</p>
-                            <p className="text-xs text-muted-foreground">{r.subject} • {r.type}</p>
-                          </div>
-                          <div className="flex items-center gap-0.5 text-secondary shrink-0">
-                            <Star className="h-3 w-3 fill-secondary" />
-                            <span className="text-xs font-semibold">{r.rating}</span>
-                          </div>
-                        </motion.button>
-                      ))}
+            <AnimatePresence>
+              {searchOpen && query.trim().length >= 2 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                  transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                  className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-border bg-card shadow-elevated overflow-hidden z-50"
+                >
+                  {searchLoading ? (
+                    <div className="flex justify-center p-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+                  ) : searchResults.length > 0 ? (
+                    <>
+                      <div className="p-1.5">
+                        {searchResults.map((r, idx) => (
+                          <motion.button
+                            key={r.id}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: idx * 0.03 }}
+                            onClick={() => handleSelect(r.id)}
+                            className="flex items-center gap-3 w-full rounded-lg px-3 py-2.5 text-left hover:bg-muted/60 transition-colors"
+                          >
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                              <FileText className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-foreground truncate">{r.title}</p>
+                              <p className="text-xs text-muted-foreground">{r.subject || "General"} • {r.resourceType || "Notes"}</p>
+                            </div>
+                            <div className="flex items-center gap-0.5 text-secondary shrink-0">
+                              <Star className="h-3 w-3 fill-secondary" />
+                              <span className="text-xs font-semibold">4.5</span>
+                            </div>
+                          </motion.button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={handleSearchAll}
+                        className="flex items-center justify-center gap-2 w-full border-t border-border px-3 py-2.5 text-sm font-medium text-secondary hover:bg-muted/40 transition-colors"
+                      >
+                        View all results for "{query}" <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </>
+                  ) : (
+                    <div className="px-4 py-6 text-center">
+                      <p className="text-sm text-muted-foreground">No results for "{query}"</p>
+                      <button
+                        onClick={handleSearchAll}
+                        className="mt-2 text-xs text-secondary hover:underline"
+                      >
+                        Browse all resources →
+                      </button>
                     </div>
-                    <button
-                      onClick={handleSearchAll}
-                      className="flex items-center justify-center gap-2 w-full border-t border-border px-3 py-2.5 text-sm font-medium text-secondary hover:bg-muted/40 transition-colors"
-                    >
-                      View all results for "{query}" <ArrowRight className="h-3.5 w-3.5" />
-                    </button>
-                  </>
-                ) : (
-                  <div className="px-4 py-6 text-center">
-                    <p className="text-sm text-muted-foreground">No results for "{query}"</p>
-                    <button
-                      onClick={handleSearchAll}
-                      className="mt-2 text-xs text-secondary hover:underline"
-                    >
-                      Browse all resources →
-                    </button>
-                  </div>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        ) : (
+          <div className="hidden md:flex flex-1" />
+        )}
 
         {/* Desktop Nav */}
         <div className="hidden items-center gap-2 md:flex shrink-0">
@@ -419,9 +431,11 @@ const Navbar = () => {
                 animate={{ opacity: 1 }}
                 className="mt-2 space-y-1"
               >
-                {results.length > 0 ? (
+                {searchLoading ? (
+                  <div className="flex justify-center p-6"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
+                ) : searchResults.length > 0 ? (
                   <>
-                    {results.map((r) => (
+                    {searchResults.map((r) => (
                       <button
                         key={r.id}
                         onClick={() => handleSelect(r.id)}
@@ -430,7 +444,7 @@ const Navbar = () => {
                         <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-foreground truncate">{r.title}</p>
-                          <p className="text-xs text-muted-foreground">{r.subject}</p>
+                          <p className="text-xs text-muted-foreground">{r.subject || "General"}</p>
                         </div>
                       </button>
                     ))}

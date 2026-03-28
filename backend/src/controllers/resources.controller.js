@@ -28,13 +28,14 @@ export async function handleGetUserResources(req, res){
  
 export async function handleGetResources(req, res) {
   try {
-    const { department, semester, type, subject } = req.query;
+    const { department, semester, type, subject, search } = req.query;
 
     const filters = {
       department,
       semester,
       type,
       subject,
+      search,
     };
 
     const resources = await resourcesService.getResources(filters);

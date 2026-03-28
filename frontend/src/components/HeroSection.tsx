@@ -1,6 +1,5 @@
 import { Search, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
@@ -8,6 +7,7 @@ import heroImage from "@/assets/hero-illustration.jpg";
 
 const HeroSection = () => {
   const sectionRef = useRef<HTMLElement>(null);
+
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start start", "end start"],
@@ -61,17 +61,9 @@ const HeroSection = () => {
               transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
               className="flex flex-col gap-4 sm:flex-row"
             >
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search notes, PYQs, subjects..."
-                  className="h-12 pl-10 bg-card border-border shadow-card text-foreground placeholder:text-muted-foreground dark:bg-muted dark:border-border dark:placeholder:text-muted-foreground/70"
-                  aria-label="Search notes, PYQs, subjects"
-                />
-              </div>
               <Link to="/browse" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-                <Button size="lg" className="h-12 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-6 interactive-scale">
-                  Explore <ArrowRight className="h-4 w-4" />
+                <Button size="lg" className="h-12 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold px-8 interactive-scale">
+                  Explore Resources <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
             </motion.div>
