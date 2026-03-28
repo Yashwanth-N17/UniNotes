@@ -11,26 +11,23 @@ import { Input } from "@/components/ui/input";
 import { FileText, Download, Star, Clock, ArrowLeft, User, ThumbsUp, Flag, Bookmark, Share2, Eye, MessageSquare } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import api from "@/lib/axios";
 
-const mockResource = {
-  id: "1",
-  title: "DSA - Complete Notes",
-  subject: "Data Structures & Algorithms",
-  department: "Computer Science",
-  university: "IIT Delhi",
-  author: "Priya S.",
-  type: "Notes",
-  rating: 4.8,
-  totalRatings: 156,
-  downloads: 1240,
-  views: 3420,
-  uploadedAt: "2 hours ago",
-  description: "Comprehensive notes covering all major DSA topics including arrays, linked lists, trees, graphs, dynamic programming, greedy algorithms, and sorting techniques. Includes diagrams and complexity analysis for each algorithm.",
-  tags: ["DSA", "algorithms", "data-structures", "midterm", "handwritten"],
-  pages: 42,
-  fileSize: "8.5 MB",
-  semester: "3rd Semester",
-};
+interface ResourceData {
+  id: string;
+  title: string;
+  subject: string;
+  resourceType: string;
+  description: string;
+  fileLink: string;
+  department: string;
+  semester: number;
+  createdAt: string;
+  user: {
+    fullname: string;
+    university: string;
+  };
+}
 
 const mockComments = [
   { id: "1", author: "Rahul K.", time: "1 day ago", text: "These notes are excellent! Helped me a lot during my end-sem preparation.", likes: 12 },
@@ -59,7 +56,7 @@ const sectionVariants = {
     transition: {
       duration: 0.5,
       delay: i * 0.1,
-      ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number],
+      ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] as any,
     },
   }),
 };
@@ -68,30 +65,45 @@ const ResourceDetail = () => {
   const { id } = useParams();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { data: user } = useUser();
+  const { data: currentUser } = useUser();
   const [comment, setComment] = useState("");
   const [bookmarked, setBookmarked] = useState(false);
   const [userRating, setUserRating] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [resource, setResource] = useState<ResourceData | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 200);
-    return () => clearTimeout(timer);
-  }, []);
+    const fetchResource = async () => {
+      try {
+        setLoading(true);
+        const res = await api.get(`/api/resources/${id}`);
+        setResource(res.data.data);
+      } catch (error) {
+        console.error("Error fetching resource:", error);
+        toast({ title: "Error", description: "Failed to load resource details", variant: "destructive" });
+        navigate("/browse");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const resource = mockResource;
+    if (id) fetchResource();
+  }, [id, navigate, toast]);
 
   const handleDownload = () => {
-    if (!user) {
+    if (!currentUser) {
       toast({ title: "Login required", description: "Please log in to download resources.", variant: "destructive" });
       navigate("/login", { state: { from: window.location.pathname } });
       return;
     }
-    toast({ title: "Download started", description: `${resource.title} is downloading...` });
+    if (resource) {
+      toast({ title: "Download started", description: `${resource.title} is downloading...` });
+      window.open(resource.fileLink, '_blank');
+    }
   };
 
   const handleBookmark = () => {
-    if (!user) {
+    if (!currentUser) {
       toast({ title: "Login required", description: "Please log in to save resources.", variant: "destructive" });
       navigate("/login", { state: { from: window.location.pathname } });
       return;
@@ -102,7 +114,7 @@ const ResourceDetail = () => {
 
   const handleComment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) {
+    if (!currentUser) {
       toast({ title: "Login required", description: "Please log in to comment.", variant: "destructive" });
       navigate("/login", { state: { from: window.location.pathname } });
       return;
@@ -113,17 +125,8 @@ const ResourceDetail = () => {
     }
   };
 
-  const handleReport = () => {
-    if (!user) {
-      toast({ title: "Login required", description: "Please log in to report resources.", variant: "destructive" });
-      navigate("/login", { state: { from: window.location.pathname } });
-      return;
-    }
-    toast({ title: "Report submitted", description: "We'll review this resource. Thanks for the feedback." });
-  };
-
   const handleRate = (star: number) => {
-    if (!user) {
+    if (!currentUser) {
       toast({ title: "Login required", description: "Please log in to rate resources.", variant: "destructive" });
       navigate("/login", { state: { from: window.location.pathname } });
       return;
@@ -132,7 +135,7 @@ const ResourceDetail = () => {
     toast({ title: `Rated ${star} stars`, description: "Thanks for your feedback! (UI only)" });
   };
 
-  if (loading) {
+  if (loading || !resource) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -158,18 +161,19 @@ const ResourceDetail = () => {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-3">
-                <Badge variant="outline" className={`text-xs font-medium ${typeColors[resource.type]}`}>{resource.type}</Badge>
-                <Badge variant="outline" className="text-xs">{resource.semester}</Badge>
+                <Badge variant="outline" className={`text-xs font-medium ${typeColors[resource.resourceType] || typeColors["Notes"]}`}>{resource.resourceType}</Badge>
+                <Badge variant="outline" className="text-xs">Semester {resource.semester}</Badge>
               </div>
               <h1 className="font-display text-2xl font-bold text-foreground sm:text-3xl">{resource.title}</h1>
               <p className="mt-2 text-muted-foreground">{resource.subject} • {resource.department}</p>
               <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1"><User className="h-3.5 w-3.5" /> {resource.author}</span>
-                <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {resource.uploadedAt}</span>
-                <span className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> {resource.views.toLocaleString()} views</span>
-                <span className="flex items-center gap-1"><Download className="h-3.5 w-3.5" /> {resource.downloads.toLocaleString()} downloads</span>
+                <span className="flex items-center gap-1"><User className="h-3.5 w-3.5" /> {resource.user?.fullname || "Unknown"}</span>
+                <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {new Date(resource.createdAt).toLocaleDateString()}</span>
+                {/* Static/Mock fields for anything not in the current DB schema */}
+                <span className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> 1,240 views</span>
+                <span className="flex items-center gap-1"><Download className="h-3.5 w-3.5" /> 845 downloads</span>
                 <span className="flex items-center gap-1 text-secondary">
-                  <Star className="h-3.5 w-3.5 fill-secondary" /> {resource.rating} ({resource.totalRatings} ratings)
+                  <Star className="h-3.5 w-3.5 fill-secondary" /> 4.8 (156 ratings)
                 </span>
               </div>
             </div>
@@ -181,12 +185,12 @@ const ResourceDetail = () => {
               </motion.div>
               <div className="flex gap-2">
                 <Button variant="outline" size="icon" onClick={handleBookmark} className={bookmarked ? "text-secondary border-secondary" : ""}>
-                  <Bookmark className={`h-4 w-4 ${bookmarked ? "fill-secondary" : ""}`} />
+                   <Bookmark className={`h-4 w-4 ${bookmarked ? "fill-secondary" : ""}`} />
                 </Button>
                 <Button variant="outline" size="icon" onClick={() => { navigator.clipboard.writeText(window.location.href); toast({ title: "Link copied!" }); }}>
                   <Share2 className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="icon" onClick={handleReport} className="text-muted-foreground hover:text-destructive">
+                <Button variant="outline" size="icon" className="text-muted-foreground hover:text-destructive">
                   <Flag className="h-4 w-4" />
                 </Button>
               </div>
@@ -198,45 +202,46 @@ const ResourceDetail = () => {
       <section className="py-8">
         <div className="container grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-8">
-            {/* Preview placeholder */}
             <motion.div custom={0} variants={sectionVariants} initial="hidden" animate="visible" className="rounded-xl border border-border bg-card overflow-hidden">
               <div className="flex items-center justify-between border-b border-border bg-muted/50 px-4 py-3">
                 <span className="text-sm font-medium text-foreground">Preview</span>
-                <span className="text-xs text-muted-foreground">{resource.pages} pages • {resource.fileSize}</span>
+                {/* Static PDF metadata */}
+                <span className="text-xs text-muted-foreground">42 pages • 8.5 MB</span>
               </div>
               <div className="flex h-96 items-center justify-center bg-muted/30">
                 <div className="text-center">
                   <FileText className="mx-auto h-16 w-16 text-muted-foreground/30" />
                   <p className="mt-3 text-sm text-muted-foreground">PDF Preview</p>
-                  <p className="text-xs text-muted-foreground/60">Preview will be available when backend is connected</p>
+                   <p className="text-xs text-muted-foreground/60">Preview will be available when backend is connected</p>
                 </div>
               </div>
             </motion.div>
 
-            {/* Description */}
             <motion.div custom={1} variants={sectionVariants} initial="hidden" animate="visible" className="rounded-xl border border-border bg-card p-6">
               <h2 className="font-display text-lg font-semibold text-foreground mb-3">Description</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">{resource.description}</p>
               <div className="mt-4 flex flex-wrap gap-2">
-                {resource.tags.map(tag => (
+                {/* Static tags */}
+                {["Study Notes", "University Exam", "Quick Prep"].map(tag => (
                   <Badge key={tag} variant="outline" className="text-xs bg-muted/50">{tag}</Badge>
                 ))}
               </div>
             </motion.div>
 
-            {/* Rating Breakdown */}
+            {/* Static Rating Breakdown */}
             <motion.div custom={2} variants={sectionVariants} initial="hidden" animate="visible" className="rounded-xl border border-border bg-card p-6">
               <h2 className="font-display text-lg font-semibold text-foreground mb-4">Ratings & Reviews</h2>
               <div className="flex flex-col sm:flex-row gap-6">
                 <div className="flex flex-col items-center justify-center min-w-[120px]">
-                  <span className="text-4xl font-bold text-foreground">{resource.rating}</span>
-                  <StarRating rating={Math.round(resource.rating)} size="sm" />
-                  <span className="text-xs text-muted-foreground mt-1">{resource.totalRatings} ratings</span>
+                  <span className="text-4xl font-bold text-foreground">4.8</span>
+                  <StarRating rating={5} size="sm" />
+                  <span className="text-xs text-muted-foreground mt-1">156 ratings</span>
                 </div>
                 <div className="flex-1 space-y-1.5">
                   {[5, 4, 3, 2, 1].map(star => {
                     const counts: Record<number, number> = { 5: 89, 4: 42, 3: 15, 2: 7, 1: 3 };
-                    const pct = Math.round((counts[star] / resource.totalRatings) * 100);
+                    const total = 156;
+                    const pct = Math.round((counts[star] / total) * 100);
                     return (
                       <div key={star} className="flex items-center gap-2 text-sm">
                         <span className="w-3 text-muted-foreground text-xs">{star}</span>
@@ -256,10 +261,9 @@ const ResourceDetail = () => {
                 </div>
               </div>
 
-              {/* User Rating */}
               <div className="mt-6 pt-4 border-t border-border">
                 <p className="text-sm font-medium text-foreground mb-2">Rate this resource</p>
-                {user ? (
+                {currentUser ? (
                   <StarRating rating={userRating} onRate={handleRate} size="lg" interactive showValue />
                 ) : (
                   <div className="flex items-center justify-between rounded-lg bg-muted/30 p-3 border border-border/50">
@@ -270,12 +274,11 @@ const ResourceDetail = () => {
               </div>
             </motion.div>
 
-            {/* Comments */}
             <motion.div custom={3} variants={sectionVariants} initial="hidden" animate="visible" className="rounded-xl border border-border bg-card p-6">
-              <h2 className="font-display text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+               <h2 className="font-display text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
                 <MessageSquare className="h-5 w-5" /> Comments ({mockComments.length})
               </h2>
-              {user ? (
+              {currentUser ? (
                 <form onSubmit={handleComment} className="mb-6 flex gap-2">
                   <Input placeholder="Add a comment..." value={comment} onChange={e => setComment(e.target.value)} className="flex-1" />
                   <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">Post</Button>
@@ -292,7 +295,7 @@ const ResourceDetail = () => {
                     key={c.id}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: 0.4 + i * 0.08 }}
+                    transition={{ duration: 0.3, delay: 0.4 + (i % 5) * 0.08 }}
                     className="border-b border-border pb-4 last:border-0 last:pb-0"
                   >
                     <div className="flex items-center justify-between mb-1">
@@ -309,43 +312,40 @@ const ResourceDetail = () => {
             </motion.div>
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-6">
             <motion.div custom={1} variants={sectionVariants} initial="hidden" animate="visible" className="rounded-xl border border-border bg-card p-5">
               <h3 className="font-display font-semibold text-foreground mb-3">Uploaded by</h3>
-              <Link to="/profile" className="flex items-center gap-3 group">
+              <div className="flex items-center gap-3 group">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
                   <User className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-foreground group-hover:text-secondary transition-colors">{resource.author}</p>
-                  <p className="text-xs text-muted-foreground">{resource.university}</p>
+                  <p className="text-sm font-medium text-foreground">{resource.user?.fullname || "Unknown User"}</p>
+                  <p className="text-xs text-muted-foreground">{resource.user?.university || "Student"}</p>
                 </div>
-              </Link>
+              </div>
             </motion.div>
 
             <motion.div custom={2} variants={sectionVariants} initial="hidden" animate="visible" className="rounded-xl border border-border bg-card p-5">
-              <h3 className="font-display font-semibold text-foreground mb-3">Resource Info</h3>
+               <h3 className="font-display font-semibold text-foreground mb-3">Resource Info</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Subject</span><span className="text-foreground">{resource.subject}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Department</span><span className="text-foreground">{resource.department}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">University</span><span className="text-foreground">{resource.university}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Pages</span><span className="text-foreground">{resource.pages}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">File Size</span><span className="text-foreground">{resource.fileSize}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Semester</span><span className="text-foreground">{resource.semester}</span></div>
               </div>
             </motion.div>
 
             <motion.div custom={3} variants={sectionVariants} initial="hidden" animate="visible" className="rounded-xl border border-border bg-card p-5">
               <h3 className="font-display font-semibold text-foreground mb-3">Related Resources</h3>
               <div className="space-y-3">
-                {mockRelated.map((r, i) => (
+                {mockRelated.map((r) => (
                   <motion.div
                     key={r.id}
                     whileHover={{ x: 4, transition: { duration: 0.15 } }}
                   >
                     <Link to={`/resource/${r.id}`} className="block rounded-lg border border-border p-3 transition-all hover:shadow-card">
                       <div className="flex items-center justify-between mb-1">
-                        <Badge variant="outline" className={`text-[10px] ${typeColors[r.type]}`}>{r.type}</Badge>
+                        <Badge variant="outline" className={`text-[10px] ${typeColors[r.type] || typeColors["Notes"]}`}>{r.type}</Badge>
                         <span className="flex items-center gap-0.5 text-xs text-secondary"><Star className="h-3 w-3 fill-secondary" />{r.rating}</span>
                       </div>
                       <p className="text-sm font-medium text-foreground">{r.title}</p>

@@ -119,3 +119,28 @@ export async function getResources(filters = {}) {
     throw error;
   }
 }
+
+export async function getResourceById(id) {
+  try {
+    if (!id || id === 'undefined') return null;
+    
+    const resource = await prisma.resources.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            fullname: true,
+            university: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    return resource;
+  } catch (error) {
+    console.log("Error in getResourceById Service", error);
+    throw error;
+  }
+}
+

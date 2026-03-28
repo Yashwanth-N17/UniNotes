@@ -55,5 +55,32 @@ export async function handleGetResources(req, res) {
     });
   }
 }
-                
+
+export async function handleGetResourceById(req, res) {
+  try {
+    const { id } = req.params;
+    const resource = await resourcesService.getResourceById(id);
+
+    if (!resource) {
+      return res.status(404).json({
+        success: false,
+        message: "Resource not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: resource,
+    });
+
+  } catch (error) {
+    console.error("Error in handleGetResourceById:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch resource",
+    });
+  }
+}
+
+
 

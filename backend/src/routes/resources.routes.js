@@ -6,11 +6,11 @@ import { upload } from "../utils/multer.js";
 const resourcesRouter = Router();
 
 resourcesRouter.get("/", resourcesController.handleGetResources);
+resourcesRouter.get("/:id", resourcesController.handleGetResourceById);
 
 resourcesRouter.use(authenticate);
 
 resourcesRouter.post("/", upload.single("file"), resourcesController.handleUploadResource);
 resourcesRouter.get("/me", resourcesController.handleGetUserResources);
-
 
 export default resourcesRouter;

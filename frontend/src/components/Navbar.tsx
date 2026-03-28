@@ -97,7 +97,7 @@ const Navbar = () => {
     setQuery("");
   }, []);
 
-  const handleSelect = (id: number) => {
+  const handleSelect = (id: string) => {
     closeSearch();
     navigate(`/resource/${id}`);
     window.scrollTo({ top: 0, behavior: "smooth" });

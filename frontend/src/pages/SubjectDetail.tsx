@@ -11,6 +11,7 @@ import { useState, useEffect, useCallback } from "react";
 import api from "@/lib/axios";
 
 export interface ResourceItem {
+  id: string;
   title: string;
   subjectSlug: string;
   dept: string;
@@ -35,7 +36,7 @@ const typeColors: Record<string, string> = {
 
 const ResourceCard = ({ item, index }: { item: ResourceItem; index: number }) => (
   <Link
-    to={`/resource/${item.subjectSlug}-${index}`}
+    to={`/resource/${item.id}`}
     onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
     className="group rounded-xl border border-border bg-card p-5 shadow-card transition-all duration-300 hover:shadow-card-hover hover:-translate-y-1 h-full flex flex-col"
   >
@@ -93,6 +94,7 @@ const SubjectDetail = () => {
       const resourcesData = res.data.data || res.data.resources || [];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mapped: ResourceItem[] = resourcesData.map((r: any) => ({
+        id: r.id,
         title: r.title || "Untitled",
         subjectSlug: subjectSlug || "",
         dept: slug || "",

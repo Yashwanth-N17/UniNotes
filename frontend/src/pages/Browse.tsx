@@ -18,6 +18,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import api from "@/lib/axios";
 
 export interface ResourceItem {
+  id: string;
   title: string;
   subject: string;
   author: string;
@@ -101,12 +102,13 @@ const Browse = () => {
       const resourcesData = res.data.data || res.data.resources || [];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mapped: ResourceItem[] = resourcesData.map((r: any) => ({
+        id: r.id,
         title: r.title || "Untitled",
         subject: r.subject || "General",
         author: r.user?.fullname || "Unknown",
         type: r.resourceType || "Notes",
         rating: 4.5,
-        downloads: Math.floor(Math.random() * 500) + 100,
+        downloads: 120,
         time: new Date(r.createdAt).toLocaleDateString(),
         university: r.user?.university || "Unknown",
         semester: r.semester || 1,
@@ -163,7 +165,7 @@ const Browse = () => {
     await fetchResources();
   };
 
-  const filtered = allResources.sort((a, b) => {
+  const filtered = [...allResources].sort((a, b) => {
       if (sortBy === "downloads") return b.downloads - a.downloads;
       if (sortBy === "rating") return b.rating - a.rating;
       return 0;
@@ -388,7 +390,7 @@ const Browse = () => {
                       layout
                       whileHover={{ y: -4, transition: { duration: 0.2 } }}
                     >
-                      <Link to={`/resource/${i}`} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="group rounded-xl border border-border bg-card p-5 shadow-card transition-shadow duration-300 hover:shadow-card-hover block h-full">
+                      <Link to={`/resource/${item.id}`} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="group rounded-xl border border-border bg-card p-5 shadow-card transition-shadow duration-300 hover:shadow-card-hover block h-full">
                         <div className="mb-3 flex items-start justify-between">
                           <div className="flex items-center gap-2">
                             <Badge variant="outline" className={`text-xs font-medium ${typeColors[item.type] || ""}`}>{item.type}</Badge>
