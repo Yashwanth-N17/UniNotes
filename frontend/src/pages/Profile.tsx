@@ -6,12 +6,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { FileText, Download, Star, Clock, Upload, Award, TrendingUp, BookOpen, Edit, MapPin, GraduationCap, Calendar, Eye, Activity } from "lucide-react";
+import { FileText, Download, Star, Clock, Upload, Award, TrendingUp, BookOpen, Edit, MapPin, GraduationCap, Calendar, Eye, Activity, Trash2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from "recharts";
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useUserResources } from "@/hooks/use-user-resources";
 import { formatDistanceToNow } from "date-fns";
+import api from "@/lib/axios";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Resource {
   id: string;
@@ -101,6 +104,28 @@ const Profile = () => {
   const navigate = useNavigate();
   const { data: userData, isLoading: isUserLoading } = useUser();
   const { data: resources, isLoading: isResourcesLoading } = useUserResources();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/api/resources/${id}`);
+    },
+    onSuccess: () => {
+      toast({ title: "Resource deleted successfully" });
+      queryClient.invalidateQueries({ queryKey: ["userResources"] });
+    },
+    onError: (error: any) => {
+      toast({ title: "Failed to delete resource", description: error.response?.data?.message || "An error occurred", variant: "destructive" });
+    }
+  });
+
+  const handleDelete = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (window.confirm("Are you sure you want to delete this resource?")) {
+      deleteMutation.mutate(id);
+    }
+  };
 
   const user = {
     ...mockStats,
@@ -204,19 +229,30 @@ const Profile = () => {
                 ) : resources && resources.length > 0 ? (
                   resources.map((item: Resource, i: number) => (
                     <div key={item.id} className="rounded-xl border border-border bg-card p-3 sm:p-4 transition-all hover:shadow-card cursor-pointer" onClick={() => window.open(item.fileLink, "_blank")}>
-                      <div className="flex items-start gap-3">
-                        <div className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-                          <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-display font-semibold text-foreground text-xs sm:text-sm truncate">{item.title}</h4>
-                          <div className="mt-1 flex items-center gap-2 text-[10px] sm:text-xs text-muted-foreground flex-wrap">
-                            <Badge variant="outline" className={`text-[10px] sm:text-xs ${typeColors[item.resourceType] || ""}`}>{item.resourceType}</Badge>
-                            <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}</span>
-                            <span className="flex items-center gap-1"><Download className="h-3 w-3" /> 0 </span>
-                            <span className="flex items-center gap-1 text-secondary"><Star className="h-3 w-3 fill-secondary" /> 0 </span>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <div className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+                            <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-display font-semibold text-foreground text-xs sm:text-sm truncate">{item.title}</h4>
+                            <div className="mt-1 flex items-center gap-2 text-[10px] sm:text-xs text-muted-foreground flex-wrap">
+                              <Badge variant="outline" className={`text-[10px] sm:text-xs ${typeColors[item.resourceType] || ""}`}>{item.resourceType}</Badge>
+                              <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}</span>
+                              <span className="flex items-center gap-1"><Download className="h-3 w-3" /> 0 </span>
+                              <span className="flex items-center gap-1 text-secondary"><Star className="h-3 w-3 fill-secondary" /> 0 </span>
+                            </div>
                           </div>
                         </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-muted-foreground hover:text-destructive shrink-0"
+                          onClick={(e) => handleDelete(e, item.id)}
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   ))

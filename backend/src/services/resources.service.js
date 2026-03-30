@@ -144,3 +144,27 @@ export async function getResourceById(id) {
   }
 }
 
+export async function deleteResource(id, req){
+  try{
+    if(!id){
+      throw new Error("Resource ID is required");
+    }
+    const resource = await prisma.resources.findUnique({
+      where: { id },
+    });
+    if(!resource){
+      throw new Error("Resource not found");
+    }
+    if(resource.userId !== req.user.id){
+      throw new Error("You are not authorized to delete this resource");
+    }
+    await prisma.resources.delete({
+      where: { id },
+    });
+    return resource;
+  }
+  catch(error){
+    console.log("Error in deleteResource Service", error);
+    throw error;
+  }
+}

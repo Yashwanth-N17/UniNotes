@@ -82,5 +82,16 @@ export async function handleGetResourceById(req, res) {
   }
 }
 
-
-
+export async function handleDeleteResource(req, res){
+  try{
+    const { id } = req.params;
+    const resource = await resourcesService.deleteResource(id, req);
+    res.status(200).json({
+      message: "Resource deleted successfully",
+      resource
+    });
+  }
+  catch(error){
+    res.status(400).json({ message: error.message });
+  }
+}
