@@ -16,31 +16,36 @@ model user {
   university String
   department String
   year       Int
-  sessions   Session[]
+  sessions   session[]
   resources  resources[]
 
-  stats      userStats?
+  stats userStats?
 }
 
-
 model userStats {
-  id             String   @id @default(uuid())
-  
-  totalUploads   Int      @default(0)
-  totalLikes     Int      @default(0)
-  totalStars     Int      @default(0)
-  reputation     Int      @default(0)
-  
-  userId         String   @unique
-  user           user     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id String @id @default(uuid())
+
+  userId String @unique
+  user   user   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  totalUploads   Int @default(0)
+  totalDownloads Int @default(0)
+  totalViews     Int @default(0)
+  totalBookmarks Int @default(0)
+
+  averageRating Float @default(0.0)
+  totalReviews  Int   @default(0)
+
+  rank         Int      @default(0)
+  achievements String[] @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([userId])
 }
 
-
-model Session {
+model session {
   id               String   @id @default(uuid())
   userId           String
   user             user     @relation(fields: [userId], references: [id])
@@ -55,25 +60,22 @@ model Session {
 }
 
 model resources {
-  id           String   @id @default(uuid())
+  id           String @id @default(uuid())
   title        String
   subject      String
   resourceType String
   description  String
   fileLink     String
 
-  department  String
-  semester    Int  
+  department String
+  semester   Int
 
-  userId       String
-  user         user     @relation(fields: [userId], references: [id])
+  userId String
+  user   user   @relation(fields: [userId], references: [id])
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([department, semester])
 }
-
-
-

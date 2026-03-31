@@ -34,6 +34,9 @@ export async function registerUser(data, { ip, headers }) {
       university,
       department,
       year,
+      stats: {
+        create: {}
+      }
     },
   });
 
@@ -187,7 +190,7 @@ export async function logoutUser(refreshToken) {
 }
 
 export async function getUserProfile(userId) {
-  const user = await prisma.user.findFirst({
+  const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
         id: true,
@@ -197,12 +200,26 @@ export async function getUserProfile(userId) {
         bio: true,
         university: true,
         department: true,
-        year: true
+        year: true,
+        stats: true,
     }
   });
 
   if (!user) {
     throw new Error("User profile not found");
+  }
+
+  if (!user.stats) {
+    user.stats = {
+      totalUploads: 0,
+      totalDownloads: 0,
+      totalViews: 0,
+      totalBookmarks: 0,
+      averageRating: 0.0,
+      totalReviews: 0,
+      rank: 0,
+      achievements: []
+    };
   }
 
   return user;

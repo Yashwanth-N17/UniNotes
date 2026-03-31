@@ -135,6 +135,12 @@ const Profile = () => {
     branch: userData?.department || "...",
     year: userData?.year ? `${userData?.year}${userData?.year === 1 ? 'st' : userData?.year === 2 ? 'nd' : userData?.year === 3 ? 'rd' : 'th'} Year` : "...",
     bio: userData?.bio || "No bio yet.",
+    rank: userData?.stats?.rank || 0,
+    achievements: userData?.stats?.achievements || [],
+    totalDownloads: userData?.stats?.totalDownloads || 0,
+    totalViews: userData?.stats?.totalViews || 0,
+    avgRating: userData?.stats?.averageRating || 0,
+    bookmarks: userData?.stats?.totalBookmarks || 0,
   };
 
 
@@ -177,7 +183,7 @@ const Profile = () => {
           {/* Stats */}
           <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
             {[
-              { label: "Rank", value: `#${user.rank}`, icon: Award, accent: true },
+              { label: "Rank", value: user.rank > 0 ? `#${user.rank}` : "Unranked", icon: Award, accent: true },
               { label: "Uploads", value: user.uploads, icon: Upload, accent: false },
               { label: "Downloads", value: user.totalDownloads.toLocaleString(), icon: Download, accent: false },
               { label: "Views", value: user.totalViews.toLocaleString(), icon: Eye, accent: false },
@@ -199,11 +205,15 @@ const Profile = () => {
         <div className="container">
           <h3 className="mb-3 font-display text-sm font-semibold text-muted-foreground uppercase tracking-wider">Achievements</h3>
           <div className="flex flex-wrap gap-3">
-            {badges.map((b) => (
-              <div key={b.name} className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ${b.color}`}>
-                <b.icon className="h-4 w-4" /> {b.name}
-              </div>
-            ))}
+            {user.achievements && user.achievements.length > 0 ? (
+              user.achievements.map((achievement: string) => (
+                <div key={achievement} className="flex items-center gap-2 rounded-full bg-secondary/10 px-4 py-2 text-sm font-medium text-secondary">
+                  <Award className="h-4 w-4" /> {achievement}
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground italic">No achievements unlocked yet.</p>
+            )}
           </div>
         </div>
       </section>
