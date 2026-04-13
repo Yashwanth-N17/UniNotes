@@ -268,7 +268,7 @@ const Navbar = () => {
                   {isLoggedIn ? (
                     <Avatar className="h-7 w-7 border border-border">
                       <AvatarFallback className="bg-primary text-primary-foreground text-[10px] font-bold">
-                        {user.fullname.split(" ").map((n: string) => n[0]).join("")}
+                        {user.fullname.split(" ").slice(0, 2).map((n: string) => n[0]).join("").toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                   ) : (

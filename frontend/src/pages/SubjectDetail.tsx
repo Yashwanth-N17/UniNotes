@@ -104,9 +104,9 @@ const SubjectDetail = () => {
         downloads: Math.floor(Math.random() * 500) + 100,
         time: new Date(r.createdAt).toLocaleDateString(),
         university: r.user?.university || "Unknown",
-        semester: 1,
+        semester: r.semester || 1,
         year: new Date(r.createdAt).getFullYear(),
-        difficulty: "Medium"
+        difficulty: r.difficulty || "Medium"
       }));
       setBaseResources(mapped);
     } catch (error) {

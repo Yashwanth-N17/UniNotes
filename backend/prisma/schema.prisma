@@ -16,8 +16,11 @@ model user {
   university String
   department String
   year       Int
+  semester   Int         @default(1)
   sessions   session[]
   resources  resources[]
+  reviews    Review[]
+  reports    Report[]
 
   stats userStats?
 }
@@ -66,6 +69,11 @@ model resources {
   resourceType String
   description  String
   fileLink     String
+  
+  views          Int   @default(0)
+  downloads      Int   @default(0)
+  averageRating  Float @default(0.0)
+  totalReviews   Int   @default(0)
 
   department String
   semester   Int
@@ -73,9 +81,42 @@ model resources {
   userId String
   user   user   @relation(fields: [userId], references: [id])
 
+  reviews      Review[]
+  reports      Report[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([department, semester])
 }
+
+model Review {
+  id         String    @id @default(uuid())
+  rating     Int       @default(0)
+  comment    String?
+  resourceId String
+  resource   resources @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  userId     String
+  user       user      @relation(fields: [userId], references: [id])
+  createdAt  DateTime  @default(now())
+
+  @@index([resourceId])
+  @@index([userId])
+}
+
+model Report {
+  id          String   @id @default(uuid())
+  reason      String
+  description String?
+  resourceId  String
+  resource    resources @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        user      @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([resourceId])
+  @@index([userId])
+}
+
+

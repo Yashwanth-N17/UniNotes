@@ -95,3 +95,17 @@ export async function handleDeleteResource(req, res){
     res.status(400).json({ message: error.message });
   }
 }
+
+export async function handleDownloadResource(req, res){
+  try{
+    const { id } = req.params;
+    const resource = await resourcesService.downloadResource(id, req);
+    res.status(200).json({
+      message: "Resource downloaded successfully",
+      resource
+    });
+  }
+  catch(error){
+    res.status(400).json({ message: error.message });
+  }
+}

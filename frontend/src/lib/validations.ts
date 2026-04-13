@@ -63,6 +63,7 @@ export const signupStep2Schema = z.object({
     .max(200, "University must be under 200 characters"),
   branch: z.string().min(1, "Branch/Department is required"),
   year: z.string().min(1, "Year is required"),
+  semester: z.string().min(1, "Semester is required"),
 });
 export type SignupStep2Data = z.infer<typeof signupStep2Schema>;
 

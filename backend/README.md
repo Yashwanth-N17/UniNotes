@@ -149,7 +149,7 @@ All routes are prefixed with `/api`.
 
 ## 🗄️ Database Models
 
-### `User`
+### `user`
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `id` | UUID | Primary Key |
@@ -161,18 +161,9 @@ All routes are prefixed with `/api`.
 | `university` | String | University name |
 | `department` | String | Academic department |
 | `year` | Int | Academic year |
+| `semester` | Int | Current academic semester |
 
-### `Session`
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `id` | UUID | Primary Key |
-| `userId` | UUID | Foreign Key (User) |
-| `refreshTokenHash` | String | Hashed refresh token |
-| `ip` | String | IP address of the user |
-| `userAgent` | String | User agent string |
-| `revoke` | Boolean | Whether the session is revoked |
-
-### `Resources`
+### `resources`
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `id` | UUID | Primary Key |
@@ -183,8 +174,40 @@ All routes are prefixed with `/api`.
 | `fileLink` | String | URL to the hosted file (Cloudinary) |
 | `department` | String | Targeted academic department |
 | `semester` | Int | Academic semester |
+| `views` | Int | Total view count |
+| `downloads` | Int | Total download count |
+| `averageRating`| Float | Calculated average rating |
+| `totalReviews` | Int | Number of reviews received |
 | `userId` | UUID | Foreign Key (Owner) |
 | `createdAt` | DateTime | Timestamp of upload |
+
+### `Review`
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `id` | UUID | Primary Key |
+| `rating` | Int | Star rating (1-5) |
+| `comment` | String | Optional feedback text |
+| `resourceId` | UUID | Foreign Key (Resource) |
+| `userId` | UUID | Foreign Key (User) |
+
+### `Report`
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `id` | UUID | Primary Key |
+| `reason` | String | Reason for report |
+| `description` | String | Additional details |
+| `resourceId` | UUID | Foreign Key (Resource) |
+| `userId` | UUID | Foreign Key (User) |
+
+### `session`
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `id` | UUID | Primary Key |
+| `userId` | UUID | Foreign Key (User) |
+| `refreshTokenHash` | String | Hashed refresh token |
+| `ip` | String | IP address of the user |
+| `userAgent` | String | User agent string |
+| `revoke` | Boolean | Whether the session is revoked |
 
 
 ---

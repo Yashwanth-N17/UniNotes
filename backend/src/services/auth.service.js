@@ -7,9 +7,11 @@ import {
 } from "../utils/token.js";
 
 export async function registerUser(data, { ip, headers }) {
-  const { fullname, username, email, password, university, department, year } = data;
+  const { fullname, username, email, password, university, department, year, semester } = data;
+  console.log("Registering user:", { fullname, username, email, university, department, year, semester });
 
-  if (!fullname || !username || !email || !password || !university || !department || !year) {
+  if (!fullname || !username || !email || !password || !university || !department || !year || !semester) {
+    console.log("Missing fields:", { fullname, username, email, hasPassword: !!password, university, department, year, semester });
     throw new Error("Missing required registration fields");
   }
 
@@ -34,10 +36,14 @@ export async function registerUser(data, { ip, headers }) {
       university,
       department,
       year,
+      semester,
       stats: {
         create: {}
       }
     },
+    include: {
+      stats: true,
+    }
   });
 
   const refreshToken = generateRefreshToken({ id: user.id });
@@ -57,6 +63,10 @@ export async function registerUser(data, { ip, headers }) {
     id: user.id,
     sessionId: session.id,
   });
+
+  if (user) {
+    delete user.password;
+  }
 
   return { user, accessToken, refreshToken };
 }
@@ -192,15 +202,7 @@ export async function logoutUser(refreshToken) {
 export async function getUserProfile(userId) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: {
-        id: true,
-        fullname: true,
-        username: true,
-        email: true,
-        bio: true,
-        university: true,
-        department: true,
-        year: true,
+    include: {
         stats: true,
     }
   });
@@ -222,6 +224,10 @@ export async function getUserProfile(userId) {
     };
   }
 
+  if (user) {
+    delete user.password;
+  }
+
   return user;
 }
 
@@ -235,7 +241,7 @@ export async function updateUserProfile(userId, data) {
   }
 
   const updateData = {};
-  const allowedFields = ['fullname', 'username', 'email', 'bio', 'university', 'department', 'year'];
+  const allowedFields = ['fullname', 'username', 'email', 'bio', 'university', 'department', 'year', 'semester'];
   
   allowedFields.forEach(field => {
       if (data[field] !== undefined) {
@@ -246,20 +252,15 @@ export async function updateUserProfile(userId, data) {
   const updatedUser = await prisma.user.update({
     where: { id: userId },
     data: updateData,
-    select: {
-        id: true,
-        fullname: true,
-        username: true,
-        email: true,
-        bio: true,
-        university: true,
-        department: true,
-        year: true
+    include: {
+        stats: true,
     }
   });
 
+  if (updatedUser) {
+    delete updatedUser.password;
+  }
+
   return updatedUser;
 }
-
-
 

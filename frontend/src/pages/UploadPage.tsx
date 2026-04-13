@@ -273,13 +273,14 @@ const UploadPage = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Computer Science">Computer Science</SelectItem>
+                    <SelectItem value="Electronics & Communication">Electronics & Communication</SelectItem>
                     <SelectItem value="Electrical Engineering">Electrical Engineering</SelectItem>
                     <SelectItem value="Mechanical Engineering">Mechanical Engineering</SelectItem>
-                    <SelectItem value="Electronics & Comm.">Electronics & Comm.</SelectItem>
                     <SelectItem value="Civil Engineering">Civil Engineering</SelectItem>
                     <SelectItem value="Chemical Engineering">Chemical Engineering</SelectItem>
                     <SelectItem value="Information Technology">Information Technology</SelectItem>
                     <SelectItem value="Industrial Engineering">Industrial Engineering</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
                 {errors.department && <p className="text-xs text-destructive">{errors.department}</p>}

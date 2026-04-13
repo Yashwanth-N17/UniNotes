@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Camera, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Camera, Save, Loader2, Calendar } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -20,13 +20,14 @@ import { AxiosError } from "axios";
 
 const branches = [
   "Computer Science",
+  "Electronics & Communication",
   "Electrical Engineering",
   "Mechanical Engineering",
-  "Electronics & Comm.",
   "Civil Engineering",
   "Chemical Engineering",
   "Information Technology",
   "Industrial Engineering",
+  "Other",
 ];
 
 const EditProfile = () => {
@@ -45,6 +46,7 @@ const EditProfile = () => {
     university: "",
     branch: "",
     year: "1st Year",
+    semester: "1",
     bio: "",
     linkedin: "",
     github: "",
@@ -61,6 +63,7 @@ const EditProfile = () => {
         branch: user.department || "",
         // Simple mapping for year; adjusts logic as per your backend (Int vs String)
         year: user.year ? `${user.year}${user.year === 1 ? 'st' : user.year === 2 ? 'nd' : user.year === 3 ? 'rd' : 'th'} Year` : "1st Year",
+        semester: String(user.semester || 1),
         bio: user.bio || "",
         linkedin: "",
         github: "",
@@ -114,6 +117,7 @@ const EditProfile = () => {
         university: form.university,
         department: form.branch,
         year: yearInt,
+        semester: parseInt(form.semester, 10),
       };
 
       await api.put("/api/auth/me", payload);
@@ -155,7 +159,14 @@ const EditProfile = () => {
           <h1 className="text-3xl font-bold text-foreground sm:text-4xl">
             Edit <span className="text-gradient">Profile</span>
           </h1>
-          <p className="mt-2 text-muted-foreground">Update your personal information and preferences</p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-2">
+            <p className="text-muted-foreground">Update your personal information and preferences</p>
+            {user?.createdAt && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1 bg-secondary/10 px-3 py-1 rounded-full">
+                <Calendar className="h-3 w-3 text-secondary" /> Member since {new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(new Date(user.createdAt))}
+              </p>
+            )}
+          </div>
         </div>
       </section>
 
@@ -167,7 +178,7 @@ const EditProfile = () => {
               <div className="relative">
                 <Avatar className="h-24 w-24 border-4 border-secondary/20">
                   <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-bold">
-                    {form.name.split(" ").map(n => n[0]).join("")}
+                    {form.name.split(" ").slice(0, 2).map(n => n[0]).join("").toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <button
@@ -232,7 +243,7 @@ const EditProfile = () => {
                   <Label>Branch</Label>
                   <Select value={form.branch} onValueChange={(v) => handleChange("branch", v)}>
                     <SelectTrigger className="bg-background">
-                      <SelectValue />
+                      <SelectValue placeholder="Select your branch" />
                     </SelectTrigger>
                     <SelectContent>
                       {branches.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
@@ -241,20 +252,35 @@ const EditProfile = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>Year</Label>
-                <Select value={form.year} onValueChange={(v) => handleChange("year", v)}>
-                  <SelectTrigger className="bg-background w-full sm:w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1st Year">1st Year</SelectItem>
-                    <SelectItem value="2nd Year">2nd Year</SelectItem>
-                    <SelectItem value="3rd Year">3rd Year</SelectItem>
-                    <SelectItem value="4th Year">4th Year</SelectItem>
-                    <SelectItem value="Postgraduate">Postgraduate</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Year</Label>
+                  <Select value={form.year} onValueChange={(v) => handleChange("year", v)}>
+                    <SelectTrigger className="bg-background w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1st Year">1st Year</SelectItem>
+                      <SelectItem value="2nd Year">2nd Year</SelectItem>
+                      <SelectItem value="3rd Year">3rd Year</SelectItem>
+                      <SelectItem value="4th Year">4th Year</SelectItem>
+                      <SelectItem value="Postgraduate">Postgraduate</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Semester</Label>
+                  <Select value={form.semester} onValueChange={(v) => handleChange("semester", v)}>
+                    <SelectTrigger className="bg-background w-full">
+                      <SelectValue placeholder="Select semester" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
+                        <SelectItem key={s} value={String(s)}>Semester {s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 

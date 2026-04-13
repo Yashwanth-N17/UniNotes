@@ -141,6 +141,10 @@ const Profile = () => {
     totalViews: userData?.stats?.totalViews || 0,
     avgRating: userData?.stats?.averageRating || 0,
     bookmarks: userData?.stats?.totalBookmarks || 0,
+    semester: userData?.semester || 1,
+    joinDate: userData?.createdAt 
+      ? new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' }).format(new Date(userData.createdAt))
+      : "..."
   };
 
 
@@ -155,7 +159,7 @@ const Profile = () => {
             <div className="flex justify-center sm:justify-start">
               <Avatar className="h-24 w-24 border-4 border-secondary/20">
                 <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-bold">
-                  {user.name.split(" ").map(n => n[0]).join("")}
+                  {user.name.split(" ").slice(0, 2).map(n => n[0]).join("").toUpperCase()}
                 </AvatarFallback>
               </Avatar>
             </div>

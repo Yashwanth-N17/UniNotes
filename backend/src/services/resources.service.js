@@ -168,3 +168,31 @@ export async function deleteResource(id, req){
     throw error;
   }
 }
+
+export async function downloadResource(id, req){
+  try{
+    if(!id){
+      throw new Error("Resource ID is required");
+    }
+    const resource = await prisma.resources.findUnique({
+      where: { id },
+    });
+    if(!resource){
+      throw new Error("Resource not found");
+    }
+    if(resource.userId !== req.user.id){
+      throw new Error("You are not authorized to download this resource");
+    }
+    await prisma.resources.update({
+      where: { id },
+      data: {
+        downloads: resource.downloads + 1,
+      },
+    });
+    return resource;
+  }
+  catch(error){
+    console.log("Error in downloadResource Service", error);
+    throw error;
+  }
+}

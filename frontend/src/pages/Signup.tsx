@@ -29,6 +29,7 @@ const Signup = () => {
   const [university, setUniversity] = useState("");
   const [branch, setBranch] = useState("");
   const [year, setYear] = useState("");
+  const [semester, setSemester] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -67,7 +68,7 @@ const Signup = () => {
     e.preventDefault();
     setErrors({});
 
-    const result = signupStep2Schema.safeParse({ username, university, branch, year });
+    const result = signupStep2Schema.safeParse({ username, university, branch, year, semester });
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
       result.error.errors.forEach((err) => {
@@ -90,6 +91,7 @@ const Signup = () => {
         university,
         department: branch,
         year: parseInt(year, 10),
+        semester: parseInt(semester, 10),
       });
 
       if (data.token) {
@@ -249,14 +251,14 @@ const Signup = () => {
                 <Select value={branch} onValueChange={setBranch}>
                   <SelectTrigger><SelectValue placeholder="Select your branch" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="cse">Computer Science</SelectItem>
-                    <SelectItem value="ece">Electronics & Communication</SelectItem>
-                    <SelectItem value="ee">Electrical Engineering</SelectItem>
-                    <SelectItem value="me">Mechanical Engineering</SelectItem>
-                    <SelectItem value="ce">Civil Engineering</SelectItem>
-                    <SelectItem value="che">Chemical Engineering</SelectItem>
-                    <SelectItem value="it">Information Technology</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="Computer Science">Computer Science</SelectItem>
+                    <SelectItem value="Electronics & Communication">Electronics & Communication</SelectItem>
+                    <SelectItem value="Electrical Engineering">Electrical Engineering</SelectItem>
+                    <SelectItem value="Mechanical Engineering">Mechanical Engineering</SelectItem>
+                    <SelectItem value="Civil Engineering">Civil Engineering</SelectItem>
+                    <SelectItem value="Chemical Engineering">Chemical Engineering</SelectItem>
+                    <SelectItem value="Information Technology">Information Technology</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
                 {errors.branch && <p className="text-xs text-destructive">{errors.branch}</p>}
@@ -274,6 +276,19 @@ const Signup = () => {
                   </SelectContent>
                 </Select>
                 {errors.year && <p className="text-xs text-destructive">{errors.year}</p>}
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Semester</Label>
+                <Select value={semester} onValueChange={setSemester}>
+                  <SelectTrigger><SelectValue placeholder="Select your semester" /></SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
+                      <SelectItem key={s} value={String(s)}>Semester {s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.semester && <p className="text-xs text-destructive">{errors.semester}</p>}
               </div>
 
               <div className="flex gap-3">

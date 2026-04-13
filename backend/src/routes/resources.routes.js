@@ -13,5 +13,6 @@ resourcesRouter.use(authenticate);
 
 resourcesRouter.post("/", upload.single("file"), resourcesController.handleUploadResource);
 resourcesRouter.delete("/:id", resourcesController.handleDeleteResource);
+resourcesRouter.post("/:id/download", resourcesController.handleDownloadResource);
 
 export default resourcesRouter;

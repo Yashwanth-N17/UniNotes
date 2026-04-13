@@ -220,12 +220,7 @@ const ResourceDetail = () => {
             <motion.div custom={1} variants={sectionVariants} initial="hidden" animate="visible" className="rounded-xl border border-border bg-card p-6">
               <h2 className="font-display text-lg font-semibold text-foreground mb-3">Description</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">{resource.description}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {/* Static tags */}
-                {["Study Notes", "University Exam", "Quick Prep"].map(tag => (
-                  <Badge key={tag} variant="outline" className="text-xs bg-muted/50">{tag}</Badge>
-                ))}
-              </div>
+
             </motion.div>
 
             {/* Static Rating Breakdown */}
