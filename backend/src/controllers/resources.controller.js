@@ -99,10 +99,22 @@ export async function handleDeleteResource(req, res){
 export async function handleDownloadResource(req, res){
   try{
     const { id } = req.params;
-    const resource = await resourcesService.downloadResource(id, req);
-    res.status(200).json({
-      message: "Resource downloaded successfully",
-      resource
+    const { stream, filename, contentType, contentLength, isFirstDownload } = await resourcesService.downloadResource(id, req);
+
+    res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(filename)}"`);
+    res.setHeader("Content-Type", contentType);
+    if (contentLength) {
+      res.setHeader("Content-Length", contentLength);
+    }
+    res.setHeader("X-Is-First-Download", isFirstDownload ? "true" : "false");
+
+    stream.pipe(res);
+
+    stream.on("error", (err) => {
+      console.error("Stream error during download:", err);
+      if (!res.headersSent) {
+        res.status(500).json({ message: "Failed to stream file" });
+      }
     });
   }
   catch(error){

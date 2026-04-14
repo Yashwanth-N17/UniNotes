@@ -21,6 +21,7 @@ model user {
   resources  resources[]
   reviews    Review[]
   reports    Report[]
+  downloadLogs DownloadLog[]
 
   stats userStats?
 }
@@ -69,11 +70,13 @@ model resources {
   resourceType String
   description  String
   fileLink     String
-  
+
   views          Int   @default(0)
   downloads      Int   @default(0)
   averageRating  Float @default(0.0)
   totalReviews   Int   @default(0)
+  fileSize       Int?
+  pageCount      Int?
 
   department String
   semester   Int
@@ -83,6 +86,7 @@ model resources {
 
   reviews      Review[]
   reports      Report[]
+  downloadLogs DownloadLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -119,4 +123,17 @@ model Report {
   @@index([userId])
 }
 
+model DownloadLog {
+  id         String    @id @default(uuid())
+  userId     String
+  user       user      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resourceId String
+  resource   resources @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  ip         String?   
+  userAgent  String?   
+  createdAt  DateTime  @default(now())
 
+  @@index([userId, resourceId]) 
+  @@index([resourceId])         
+  @@index([userId])             
+}

@@ -8,10 +8,11 @@ import { useUser } from "@/hooks/use-user";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FileText, Download, Star, Clock, ArrowLeft, User, ThumbsUp, Flag, Bookmark, Share2, Eye, MessageSquare } from "lucide-react";
+import { FileText, Download, Star, Clock, ArrowLeft, User, ThumbsUp, Flag, Bookmark, Share2, Eye, MessageSquare, HardDrive } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/axios";
+import axios, { AxiosError } from "axios";
 
 interface ResourceData {
   id: string;
@@ -23,6 +24,12 @@ interface ResourceData {
   department: string;
   semester: number;
   createdAt: string;
+  downloads: number;
+  views: number;
+  averageRating: number;
+  totalReviews: number;
+  fileSize?: number;
+  pageCount?: number;
   user: {
     fullname: string;
     university: string;
@@ -56,7 +63,7 @@ const sectionVariants = {
     transition: {
       duration: 0.5,
       delay: i * 0.1,
-      ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] as any,
+      ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number],
     },
   }),
 };
@@ -90,17 +97,82 @@ const ResourceDetail = () => {
     if (id) fetchResource();
   }, [id, navigate, toast]);
 
-  const handleDownload = () => {
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async () => {
     if (!currentUser) {
       toast({ title: "Login required", description: "Please log in to download resources.", variant: "destructive" });
       navigate("/login", { state: { from: window.location.pathname } });
       return;
     }
-    if (resource) {
-      toast({ title: "Download started", description: `${resource.title} is downloading...` });
-      window.open(resource.fileLink, '_blank');
+    if (!resource) return;
+
+    try {
+      setDownloading(true);
+      toast({ title: "⬇️ Download starting…", description: `Preparing "${resource.title}" for download.` });
+
+      const response = await api.get(
+        `/api/resources/${resource.id}/download`,
+        { responseType: "blob" }
+      );
+
+      // Read whether backend counted this as a fresh download
+      const isFirstDownload = response.headers["x-is-first-download"] === "true";
+
+      // Build a filename from Content-Disposition or fallback to resource title
+      const disposition = response.headers["content-disposition"] || "";
+      const match = disposition.match(/filename[^;=\n]*=((['"])([^'"]*)\2|([^;\n]*))/i);
+      const rawName = match ? (match[3] || match[4]) : null;
+      const filename = rawName ? decodeURIComponent(rawName) : `${resource.title}.pdf`;
+
+      // Trigger browser download without any navigation
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      if (isFirstDownload) {
+        setResource((prev) => prev ? { ...prev, downloads: prev.downloads + 1 } : prev);
+      }
+
+      toast({ title: "✅ Download complete!", description: `"${resource.title}" saved to your downloads.` });
+    } catch (err: unknown) {
+      let status: number | undefined;
+      let axiosError: AxiosError | undefined;
+
+      if (axios.isAxiosError(err)) {
+        axiosError = err;
+        status = err.response?.status;
+      }
+
+      if (status === 401) {
+        toast({ title: "Session expired", description: "Please log in again to download resources.", variant: "destructive" });
+        navigate("/login", { state: { from: window.location.pathname } });
+        return;
+      }
+
+      let message = "Something went wrong. Please try again.";
+      try {
+        if (axiosError && axiosError.response?.data instanceof Blob) {
+          const errBlob = axiosError.response.data;
+          const text = await errBlob.text();
+          const parsed = JSON.parse(text);
+          message = parsed?.message || message;
+        } else if (axiosError?.response?.data) {
+          const data = axiosError.response.data as { message?: string };
+          message = data.message || message;
+        }
+      } catch { /* ignore parse errors */ }
+      toast({ title: "Download failed", description: message, variant: "destructive" });
+    } finally {
+      setDownloading(false);
     }
   };
+
 
   const handleBookmark = () => {
     if (!currentUser) {
@@ -144,6 +216,19 @@ const ResourceDetail = () => {
     );
   }
 
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const metadata = [
+    resource.pageCount ? `${resource.pageCount} pages` : null,
+    resource.fileSize ? formatBytes(resource.fileSize) : null
+  ].filter(Boolean).join(" • ");
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -170,17 +255,27 @@ const ResourceDetail = () => {
                 <span className="flex items-center gap-1"><User className="h-3.5 w-3.5" /> {resource.user?.fullname || "Unknown"}</span>
                 <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {new Date(resource.createdAt).toLocaleDateString()}</span>
                 {/* Static/Mock fields for anything not in the current DB schema */}
-                <span className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> 1,240 views</span>
-                <span className="flex items-center gap-1"><Download className="h-3.5 w-3.5" /> 845 downloads</span>
+                <span className="flex items-center gap-1"><Download className="h-3.5 w-3.5" /> {resource.downloads.toLocaleString()} downloads</span>
+                {resource.pageCount && (
+                  <span className="flex items-center gap-1"><FileText className="h-3.5 w-3.5" /> {resource.pageCount} pages</span>
+                )}
+                {resource.fileSize && (
+                  <span className="flex items-center gap-1"><HardDrive className="h-3.5 w-3.5" /> {formatBytes(resource.fileSize)}</span>
+                )}
                 <span className="flex items-center gap-1 text-secondary">
-                  <Star className="h-3.5 w-3.5 fill-secondary" /> 4.8 (156 ratings)
+                  <Star className="h-3.5 w-3.5 fill-secondary" /> {resource.averageRating.toFixed(1)} ({resource.totalReviews} ratings)
                 </span>
               </div>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button className="gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold w-full" onClick={handleDownload}>
-                  <Download className="h-4 w-4" /> Download PDF
+                <Button
+                  className="gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold w-full"
+                  onClick={handleDownload}
+                  disabled={downloading}
+                >
+                  <Download className={`h-4 w-4 ${downloading ? "animate-bounce" : ""}`} />
+                  {downloading ? "Downloading…" : "Download PDF"}
                 </Button>
               </motion.div>
               <div className="flex gap-2">
@@ -205,15 +300,24 @@ const ResourceDetail = () => {
             <motion.div custom={0} variants={sectionVariants} initial="hidden" animate="visible" className="rounded-xl border border-border bg-card overflow-hidden">
               <div className="flex items-center justify-between border-b border-border bg-muted/50 px-4 py-3">
                 <span className="text-sm font-medium text-foreground">Preview</span>
-                {/* Static PDF metadata */}
-                <span className="text-xs text-muted-foreground">42 pages • 8.5 MB</span>
+                <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                  {resource.subject} {metadata ? `• ${metadata}` : ''}
+                </span>
               </div>
-              <div className="flex h-96 items-center justify-center bg-muted/30">
-                <div className="text-center">
-                  <FileText className="mx-auto h-16 w-16 text-muted-foreground/30" />
-                  <p className="mt-3 text-sm text-muted-foreground">PDF Preview</p>
-                   <p className="text-xs text-muted-foreground/60">Preview will be available when backend is connected</p>
-                </div>
+              <div className="flex h-[500px] w-full items-center justify-center bg-muted/10">
+                {resource.fileLink ? (
+                  <iframe
+                    src={`${resource.fileLink}#toolbar=0&navpanes=0`}
+                    className="h-full w-full border-none"
+                    title="Resource Preview"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="text-center">
+                    <FileText className="mx-auto h-16 w-16 text-muted-foreground/30" />
+                    <p className="mt-3 text-sm text-muted-foreground">Preview not available</p>
+                  </div>
+                )}
               </div>
             </motion.div>
 
